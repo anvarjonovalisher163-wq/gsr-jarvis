@@ -48,11 +48,14 @@ sudo apt install -y nodejs
 
 ```bash
 sudo mkdir -p /opt/gsr-jarvis && sudo chown $USER /opt/gsr-jarvis
-git clone <REPO_URL> /opt/gsr-jarvis
+git clone https://github.com/anvarjonovalisher163-wq/gsr-jarvis.git /opt/gsr-jarvis
 cd /opt/gsr-jarvis
+git config core.hooksPath .githooks
 ```
 
-(Git bo'lmasa, `scp`/`rsync` bilan ham ko'chirsa bo'ladi.)
+Repo **yopiq (private)** — clone qilishda GitHub login so'raladi. VPS uchun eng qulayi [Personal Access Token](https://github.com/settings/tokens) yaratib, parol o'rniga ishlatish.
+
+Oxirgi qator maxfiy ma'lumot himoyasini yoqadi (pastda tushuntirilgan) — har bir yangi nusxada bir marta bajariladi.
 
 ## 2. Backend: venv va kutubxonalar
 
@@ -296,7 +299,41 @@ DATABASE_URL=postgresql+psycopg://jarvis:kuchli-parol@localhost/jarvis
 
 `sudo systemctl restart gsr-jarvis` — jadvallar avtomatik yaratiladi (eski ma'lumotni ko'chirish kerak bo'lsa `pgloader` ishlating yoki `seed.py` ni qayta ishga tushiring).
 
-# Yangilash
+# Kod bilan ishlash (GitHub)
+
+Repo: [github.com/anvarjonovalisher163-wq/gsr-jarvis](https://github.com/anvarjonovalisher163-wq/gsr-jarvis) — **private**.
+
+## Maxfiy ma'lumot himoyasi
+
+Repoda `.githooks/pre-commit` bor. U har bir commitdan oldin ishga tushib, quyidagilarni **bloklaydi**:
+
+- `.env` va shunga o'xshash sozlama fayllari (`.env.example` bundan mustasno)
+- `.pem`, `.key`, SSH kalitlari
+- kod ichidagi Meta tokeni (`EAAG...`), Claude kaliti (`sk-ant-...`), GitHub tokeni (`ghp_...`)
+- `SECRET`, `TOKEN`, `PASSWORD` o'zgaruvchisiga berilgan uzun haqiqiy qiymatlar
+
+Yoqish (har bir yangi nusxada bir marta):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Bu shunchaki qulaylik emas: Meta tokeni va CRM kaliti qo'lga tushsa, reklama akkauntingiz va mijoz ma'lumotlaringizga kirish ochiladi. `.gitignore` faylni ko'rinmas qiladi, hook esa `git add -f` bilan majburan qo'shishga ham yo'l qo'ymaydi.
+
+Agar hook xato ishga tushsa (masalan test ma'lumoti), bir martalik chetlab o'tish: `git commit --no-verify`. Buni faqat qiymat haqiqatan maxfiy emasligiga ishonch hosil qilgandan keyin qiling.
+
+## Kundalik ish
+
+```bash
+git pull                      # oxirgi o'zgarishlarni olish
+# ... kod yoziladi ...
+git add -A && git commit -m "nima o'zgardi"
+git push
+```
+
+Commitdan oldin testlarni ishga tushiring: `cd backend && python -m pytest tests -q`
+
+# VPS'ni yangilash
 
 ```bash
 cd /opt/gsr-jarvis && git pull

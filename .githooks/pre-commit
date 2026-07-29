@@ -1,0 +1,50 @@
+#!/bin/sh
+# Blocks secrets from being committed. Installed via:
+#     git config core.hooksPath .githooks
+#
+# Bypass (only when you are certain): git commit --no-verify
+
+fail() {
+    echo ""
+    echo "  COMMIT TO'XTATILDI — maxfiy ma'lumot aniqlandi"
+    echo "  ------------------------------------------------"
+    echo "  $1"
+    echo ""
+    echo "  Tuzatish: faylni commitdan chiqaring —  git restore --staged <fayl>"
+    echo "  Agar bu xato bo'lsa:                    git commit --no-verify"
+    echo ""
+    exit 1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$staged" ] && exit 0
+
+# 1. Environment files (.env.example is allowed on purpose)
+for f in $staged; do
+    case "$f" in
+        .env.example) ;;
+        .env|.env.*|*/.env|*/.env.*)
+            fail "Sozlama fayli commitga tushyapti: $f" ;;
+        *.pem|*.key|*id_rsa*)
+            fail "Kalit fayli commitga tushyapti: $f" ;;
+    esac
+done
+
+# 2. Secret-looking values inside the staged content
+#    EAAG.. = Meta token, sk-ant- = Claude, ghp_/gho_ = GitHub
+patterns='EAA[A-Za-z0-9]\{40,\}|sk-ant-[A-Za-z0-9_-]\{20,\}|gh[pousr]_[A-Za-z0-9]\{30,\}|BEGIN [A-Z ]*PRIVATE KEY'
+hit=$(git diff --cached -U0 | grep -n -E "^\+" | grep -E "$patterns" | head -3)
+[ -n "$hit" ] && fail "Kod ichida token/kalitga o'xshash qiymat bor:
+  $(echo "$hit" | cut -c1-90)"
+
+# 3. Long hex/base64 assigned to a SECRET/TOKEN/PASSWORD variable
+hit=$(git diff --cached -U0 \
+    | grep -E "^\+" \
+    | grep -v -E "^\+\+\+" \
+    | grep -iE "(secret|token|password|api_key)[a-z_]*[[:space:]]*[=:][[:space:]]*[\"']?[A-Za-z0-9+/=_-]{24,}" \
+    | grep -viE "REPLACE|EXAMPLE|your-|<|xxx|\.\.\.|test|pytest|hash_password|token_hex" \
+    | head -3)
+[ -n "$hit" ] && fail "Haqiqiy parol/kalitga o'xshash qiymat:
+  $(echo "$hit" | cut -c1-90)"
+
+exit 0
