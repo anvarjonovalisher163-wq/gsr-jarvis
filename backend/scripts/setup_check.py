@@ -76,24 +76,24 @@ STEPS = [
     },
     {
         "num": 5,
-        "title": "CRM webhook kaliti",
-        "hint": ".env da CRM_WEBHOOK_SECRET — xuddi shu kalit CRM tomonda ham",
+        "title": "Meta token (reklama + Instagram)",
+        "hint": "python scripts/setup_meta.py  →  python scripts/check_meta_token.py --apply",
     },
     {
         "num": 6,
-        "title": "Meta token (reklama + Instagram)",
-        "hint": "python scripts/check_meta_token.py",
-        "optional": True,
-    },
-    {
-        "num": 7,
         "title": "Frontend build",
         "hint": "cd frontend && npm install && npm run build",
     },
     {
-        "num": 8,
+        "num": 7,
         "title": "VPS: systemd + nginx + SSL",
         "hint": "README.md → VPS'ga o'rnatish (8-9 bo'limlar)",
+        "optional": True,
+    },
+    {
+        "num": 8,
+        "title": "CRM webhook (oxirida)",
+        "hint": ".env da CRM_WEBHOOK_SECRET — sherik webhook yuboradi",
         "optional": True,
     },
 ]
@@ -203,39 +203,32 @@ def check_step_4() -> bool:
 
 def check_step_5() -> bool:
     env = _load_env()
-    secret = env.get("CRM_WEBHOOK_SECRET", "")
-    if _placeholder(secret):
-        _warn("CRM_WEBHOOK_SECRET bo'sh — webhook hali yopiq (503 qaytaradi)")
-        _warn("Kalit yaratish: python -c \"import secrets; print(secrets.token_hex(32))\"")
-        return False
-    _ok("CRM_WEBHOOK_SECRET sozlangan — sherik webhook yuborishi mumkin")
-    return True
-
-
-def check_step_6() -> bool:
-    env = _load_env()
     token = env.get("META_ACCESS_TOKEN", "")
     ad_id = env.get("META_AD_ACCOUNT_ID", "")
     ig_id = env.get("IG_BUSINESS_ID", "")
 
     if _placeholder(token):
-        _warn("META_ACCESS_TOKEN yo'q — reklama xarajati va Insights ishlamaydi")
-        _warn("Tekshirish: python scripts/check_meta_token.py")
+        _fail("META_ACCESS_TOKEN yo'q")
+        _warn("Yo'riqnoma: python scripts/setup_meta.py")
+        _warn("Token olgach: python scripts/check_meta_token.py --apply")
         return False
 
     _ok("META_ACCESS_TOKEN bor")
+    ok = True
     if _placeholder(ad_id):
         _warn("META_AD_ACCOUNT_ID yo'q — ROI hisoblanmaydi")
+        ok = False
     else:
         _ok("META_AD_ACCOUNT_ID bor")
     if _placeholder(ig_id):
         _warn("IG_BUSINESS_ID yo'q — Instagram statistikasi ishlamaydi")
+        ok = False
     else:
         _ok("IG_BUSINESS_ID bor")
-    return not (_placeholder(ad_id) or _placeholder(ig_id))
+    return ok
 
 
-def check_step_7() -> bool:
+def check_step_6() -> bool:
     dist = REPO_ROOT / "frontend" / "dist" / "index.html"
     node_modules = REPO_ROOT / "frontend" / "node_modules"
     if dist.is_file():
@@ -248,10 +241,20 @@ def check_step_7() -> bool:
     return False
 
 
-def check_step_8() -> bool:
+def check_step_7() -> bool:
     _warn("VPS tekshiruvi bu muhitdan avtomatik bajarilmaydi")
     _warn("Qo'lda: systemctl status gsr-jarvis, nginx -t, certbot")
     return False
+
+
+def check_step_8() -> bool:
+    env = _load_env()
+    secret = env.get("CRM_WEBHOOK_SECRET", "")
+    if _placeholder(secret):
+        _warn("CRM hali ulanmagan — oxirgi qadam (hozircha ixtiyoriy)")
+        return False
+    _ok("CRM_WEBHOOK_SECRET sozlangan — sherik webhook yuborishi mumkin")
+    return True
 
 
 CHECKERS = {

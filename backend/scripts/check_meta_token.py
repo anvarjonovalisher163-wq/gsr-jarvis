@@ -1,79 +1,29 @@
-"""Meta token tekshiruvchi.
+"""Meta token tekshiruvchi va .env ga yozuvchi.
 
-Tokeningizni tekshiradi, ruxsatlarni ko'rsatadi va .env uchun kerakli
-ID'larni (ad account, Instagram business) o'zi topib beradi.
+Tokeningizni tekshiradi, ruxsatlarni ko'rsatadi va ID'larni topadi.
 
-Eng oson yo'l — tokenni .env fayliga yozib qo'ying:
+Eng oson yo'l:
+    1. Tokenni .env ga yozing:  META_ACCESS_TOKEN=EAAG...
+    2. Tekshirish:             python scripts/check_meta_token.py
+    3. .env ga saqlash:        python scripts/check_meta_token.py --apply
 
-    META_ACCESS_TOKEN=EAAG...
+Yoki bir qadamda: python scripts/setup_meta.py
 
-so'ng backend/ ichida:
-
-    python scripts/check_meta_token.py
-
-Skript tokenni .env dan o'zi topadi. Agar u yerda bo'lmasa, so'raydi.
-
-Skript hech narsani o'zgartirmaydi — faqat o'qiydi va hisobot beradi.
-Token faqat graph.facebook.com ga yuboriladi, boshqa hech qayerga.
+Token faqat graph.facebook.com ga yuboriladi.
 """
+from __future__ import annotations
+
+import argparse
 import getpass
 import os
 import sys
-from pathlib import Path
 
 import httpx
 
+from meta_env import clean_token, is_placeholder, read_meta_from_env, write_meta_to_env
+
 GRAPH = "https://graph.facebook.com/v21.0"
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
-
-def clean(raw: str) -> str:
-    """Terminal va nusxalash artefaktlarini olib tashlaydi."""
-    token = raw.strip().strip('"').strip("'").strip()
-    # Sometimes the whole KEY=value line gets pasted
-    if token.upper().startswith("META_ACCESS_TOKEN="):
-        token = token.split("=", 1)[1].strip().strip('"').strip("'")
-    return "".join(token.split())  # drop stray spaces / newlines
-
-
-def token_from_env_file() -> str:
-    """.env faylidan META_ACCESS_TOKEN ni o'qiydi (repo ildizi yoki backend/)."""
-    for candidate in (REPO_ROOT / ".env", REPO_ROOT / "backend" / ".env"):
-        if not candidate.is_file():
-            continue
-        for line in candidate.read_text(encoding="utf-8", errors="replace").splitlines():
-            line = line.strip()
-            if line.startswith("META_ACCESS_TOKEN=") and not line.startswith("#"):
-                value = clean(line.split("=", 1)[1])
-                if value and "REPLACE" not in value.upper():
-                    print(f"Token {candidate} faylidan olindi.")
-                    return value
-    return ""
-
-
-def read_token() -> str:
-    token = clean(os.environ.get("META_ACCESS_TOKEN") or "")
-    if token:
-        print("Token muhit o'zgaruvchisidan olindi.")
-        return token
-
-    token = token_from_env_file()
-    if token:
-        return token
-
-    print("Token .env faylida topilmadi.")
-    print("Uni shu yerga qo'ying yoki .env fayliga yozing:  META_ACCESS_TOKEN=EAAG...\n")
-    try:
-        token = clean(getpass.getpass("Token (ko'rinmaydi): "))
-    except Exception:
-        token = ""
-    if not token:
-        # Some Windows terminals refuse paste into a hidden prompt
-        print("(yashirin kiritish ishlamadi — ochiq holda so'raladi)")
-        token = clean(input("Token: "))
-    return token
-
-# What each module needs
 NEEDED = {
     "ads_read": "Reklama xarajati va ROI tahlili",
     "instagram_basic": "Instagram sahifa ma'lumoti",
@@ -95,142 +45,207 @@ def get(client: httpx.Client, path: str, token: str, **params) -> dict:
         return {"error": {"message": f"so'rov bajarilmadi: {e}"}}
 
 
-def main() -> None:
-    print("=" * 62)
-    print("META TOKEN TEKSHIRUVI")
-    print("=" * 62 + "\n")
+def read_token(interactive: bool = True) -> str:
+    token = clean_token(os.environ.get("META_ACCESS_TOKEN") or "")
+    if token and not is_placeholder(token):
+        print("Token muhit o'zgaruvchisidan olindi.")
+        return token
 
-    token = read_token()
+    env_token = read_meta_from_env().get("META_ACCESS_TOKEN", "")
+    if env_token and not is_placeholder(env_token):
+        print("Token .env faylidan olindi.")
+        return env_token
+
+    if not interactive:
+        return ""
+
+    print("Token .env faylida topilmadi.")
+    print("Uni .env ga yozing:  META_ACCESS_TOKEN=EAAG...\n")
+    try:
+        token = clean_token(getpass.getpass("Token (ko'rinmaydi): "))
+    except Exception:
+        token = ""
     if not token:
-        sys.exit("Token berilmadi.")
+        print("(yashirin kiritish ishlamadi — ochiq holda so'raladi)")
+        try:
+            token = clean_token(input("Token: "))
+        except EOFError:
+            return ""
+    return token
 
-    # Diagnostics that do not reveal the token itself — enough to spot a
-    # truncated or mis-pasted value before blaming Meta.
-    print(f"\nQabul qilindi: {len(token)} belgi, boshlanishi '{token[:4]}...'")
+
+def validate_token(token: str) -> dict:
+    """Tokenni tekshiradi. Natija: ok, ad_account_id, ig_id, errors."""
+    result = {
+        "ok": False,
+        "token": token,
+        "name": "",
+        "ad_account_id": None,
+        "ig_id": None,
+        "errors": [],
+        "warnings": [],
+    }
+
     if len(token) < 50:
-        print(f"{WARN} Token juda qisqa. To'liq nusxalanmagan bo'lishi mumkin —")
-        print("        Meta System User tokeni odatda 180-250 belgi bo'ladi.")
+        result["warnings"].append("Token juda qisqa — to'liq nusxalanmagan bo'lishi mumkin.")
     if not token.startswith("EAA"):
-        print(f"{WARN} Token 'EAA' bilan boshlanmadi. Meta tokenlari shunday boshlanadi —")
-        print("        boshqa qiymat nusxalangan bo'lishi mumkin.")
+        result["warnings"].append("Token 'EAA' bilan boshlanmadi.")
 
     with httpx.Client() as client:
-        # --- 1. Token umuman ishlaydimi ---
         me = get(client, "me", token, fields="id,name")
         if "error" in me:
-            msg = me["error"].get("message", "")
-            print(f"\n{NO} Token ishlamadi: {msg}")
-            if "parse" in msg.lower():
-                print("\n'Cannot parse' — token buzuq yoki to'liq emas. Odatda sabab:")
-                print("  * terminalga to'liq qo'yilmagan (PowerShell'da yashirin")
-                print("    kiritishga Ctrl+V har doim ham o'tmaydi)")
-                print("  * nusxalashda bir qismi tushib qolgan")
-                print("\nYECHIM: tokenni .env fayliga yozing va skriptni qayta")
-                print("ishga tushiring — u o'zi o'qib oladi:")
-                print("  META_ACCESS_TOKEN=EAAG...")
-            else:
-                print("\nSabablari odatda: token muddati tugagan yoki ilova o'chirilgan.")
-            sys.exit(1)
-        print(f"\n{OK} Token amal qilyapti — {me.get('name', '?')} (id {me.get('id')})")
+            result["errors"].append(me["error"].get("message", "Token ishlamadi"))
+            return result
 
-        # --- 2. Ruxsatlar ---
-        print("\nRUXSATLAR:")
-        granted: set[str] = set()
-        perms = get(client, "me/permissions", token)
-        if "data" in perms:
-            granted = {p["permission"] for p in perms["data"] if p.get("status") == "granted"}
-        else:
-            # System User tokenlarida /me/permissions ishlamaydi — debug_token
-            dbg = get(client, "debug_token", token, input_token=token)
-            granted = set((dbg.get("data") or {}).get("scopes") or [])
+        result["name"] = me.get("name", "?")
+        result["ok"] = True
 
-        if not granted:
-            print(f"{WARN} Ruxsatlar ro'yxatini o'qib bo'lmadi (System User tokenida normal).")
-            print("        Quyidagi tekshiruvlar haqiqiy holatni ko'rsatadi.")
-        else:
-            for scope, why in NEEDED.items():
-                mark = OK if scope in granted else NO
-                print(f"{mark} {scope:<28} — {why}")
-
-        # --- 3. Reklama akkauntlari ---
-        print("\nREKLAMA AKKAUNTLARI (META_AD_ACCOUNT_ID uchun):")
-        ad_account_id = None
         accounts = get(
             client, "me/adaccounts", token, fields="id,account_id,name,currency,account_status"
         )
         if "error" in accounts:
-            print(f"{NO} O'qib bo'lmadi: {accounts['error'].get('message')}")
-            print("        Odatda ads_read ruxsati yo'qligini bildiradi.")
-        elif not accounts.get("data"):
-            print(f"{NO} Bitta ham reklama akkaunti ko'rinmadi.")
-            print("        Token Business Manager'dagi akkauntga ulanmagan bo'lishi mumkin.")
-        else:
+            result["errors"].append(f"Reklama akkauntlari: {accounts['error'].get('message')}")
+        elif accounts.get("data"):
             for a in accounts["data"]:
-                status = "faol" if a.get("account_status") == 1 else "faol emas"
-                print(f"{OK} {a.get('name')} — {a.get('account_id')} "
-                      f"({a.get('currency')}, {status})")
-                if ad_account_id is None:
-                    ad_account_id = a.get("account_id")
+                if a.get("account_status") == 1 and result["ad_account_id"] is None:
+                    result["ad_account_id"] = a.get("account_id")
+            if result["ad_account_id"] is None:
+                result["ad_account_id"] = accounts["data"][0].get("account_id")
+        else:
+            result["errors"].append("Reklama akkaunti topilmadi — ads_read yoki asset biriktirishni tekshiring.")
 
-        # --- 4. Instagram business akkaunt ---
-        print("\nINSTAGRAM AKKAUNT (IG_BUSINESS_ID uchun):")
-        ig_id = None
         pages = get(
             client, "me/accounts", token, fields="name,instagram_business_account{id,username}"
         )
         if "error" in pages:
-            print(f"{NO} O'qib bo'lmadi: {pages['error'].get('message')}")
-            print("        pages_show_list ruxsati kerak.")
-        elif not pages.get("data"):
-            print(f"{NO} Facebook sahifa ko'rinmadi.")
-            print("        Instagram business akkaunt Facebook sahifaga bog'langan bo'lishi shart.")
+            result["errors"].append(f"Instagram: {pages['error'].get('message')}")
         else:
-            for p in pages["data"]:
+            for p in pages.get("data") or []:
                 iba = p.get("instagram_business_account")
-                if iba:
-                    print(f"{OK} {p.get('name')} → @{iba.get('username')} (id {iba.get('id')})")
-                    if ig_id is None:
-                        ig_id = iba.get("id")
-                else:
-                    print(f"{WARN} {p.get('name')} — Instagram akkaunt bog'lanmagan")
+                if iba and result["ig_id"] is None:
+                    result["ig_id"] = iba.get("id")
+            if result["ig_id"] is None:
+                result["errors"].append("Instagram business ID topilmadi — sahifaga bog'langan bo'lsin.")
 
-        # --- 5. Haqiqiy o'qish sinovi ---
-        print("\nAMALIY SINOV:")
-        if ad_account_id:
+        if result["ad_account_id"]:
             ins = get(
                 client,
-                f"act_{ad_account_id}/insights",
+                f"act_{result['ad_account_id']}/insights",
                 token,
                 fields="spend",
                 date_preset="last_7d",
             )
             if "error" in ins:
-                print(f"{NO} Xarajat o'qilmadi: {ins['error'].get('message')}")
-            else:
-                rows = ins.get("data", [])
-                spent = rows[0].get("spend") if rows else "0"
-                print(f"{OK} Reklama xarajati o'qildi (so'nggi 7 kun: {spent})")
-        if ig_id:
-            ins = get(client, f"{ig_id}/insights", token, metric="reach", period="day")
-            if "error" in ins:
-                print(f"{NO} Insights o'qilmadi: {ins['error'].get('message')}")
-            else:
-                print(f"{OK} Instagram statistikasi o'qildi")
+                result["errors"].append(f"Xarajat o'qilmadi: {ins['error'].get('message')}")
 
-    # --- 6. Natija ---
-    print("\n" + "=" * 62)
-    if ad_account_id or ig_id:
-        print(".env FAYLIGA QO'YING:")
-        print("=" * 62)
-        print("META_ACCESS_TOKEN=<yuqorida kiritgan tokeningiz>")
-        if ad_account_id:
-            print(f"META_AD_ACCOUNT_ID={ad_account_id}")
-        if ig_id:
-            print(f"IG_BUSINESS_ID={ig_id}")
-        print("\nSo'ng: sudo systemctl restart gsr-jarvis")
+        if result["ig_id"]:
+            ins = get(client, f"{result['ig_id']}/insights", token, metric="reach", period="day")
+            if "error" in ins:
+                result["errors"].append(f"Insights o'qilmadi: {ins['error'].get('message')}")
+
+    return result
+
+
+def print_report(token: str, result: dict) -> None:
+    print(f"\nQabul qilindi: {len(token)} belgi, boshlanishi '{token[:4]}...'")
+    for w in result["warnings"]:
+        print(f"{WARN} {w}")
+
+    if not result["ok"]:
+        for e in result["errors"]:
+            print(f"{NO} {e}")
+        return
+
+    print(f"\n{OK} Token amal qilyapti — {result['name']}")
+
+    print("\nRUXSATLAR (kerakli):")
+    for scope, why in NEEDED.items():
+        print(f"  • {scope:<28} — {why}")
+
+    print("\nREKLAMA AKKAUNTI:")
+    if result["ad_account_id"]:
+        print(f"{OK} META_AD_ACCOUNT_ID={result['ad_account_id']}")
     else:
-        print("Kerakli ID'lar topilmadi — yuqoridagi [YO'Q] qatorlarga qarang.")
+        print(f"{NO} topilmadi")
+
+    print("\nINSTAGRAM:")
+    if result["ig_id"]:
+        print(f"{OK} IG_BUSINESS_ID={result['ig_id']}")
+    else:
+        print(f"{NO} topilmadi")
+
+    if result["errors"]:
+        print("\nMUAMMOLAR:")
+        for e in result["errors"]:
+            print(f"{NO} {e}")
+
+
+def apply_to_env(token: str, result: dict) -> None:
+    if not result["ad_account_id"] and not result["ig_id"]:
+        print("\n.env ga yozish bekor — hech qanday ID topilmadi.")
+        sys.exit(1)
+
+    values = {"META_ACCESS_TOKEN": token}
+    if result["ad_account_id"]:
+        values["META_AD_ACCOUNT_ID"] = str(result["ad_account_id"])
+    if result["ig_id"]:
+        values["IG_BUSINESS_ID"] = str(result["ig_id"])
+
+    path = write_meta_to_env(values)
+    print(f"\n{OK} .env yangilandi: {path}")
+    for key, val in values.items():
+        if key == "META_ACCESS_TOKEN":
+            print(f"  {key}=EAAG... ({len(val)} belgi)")
+        else:
+            print(f"  {key}={val}")
+    print("\nKeyingi qadam:")
+    print("  sudo systemctl restart gsr-jarvis   # VPS'da")
+    print("  yoki lokal: uvicorn qayta ishga tushiring")
+    print("  sinov: curl -X POST http://127.0.0.1:8000/api/analytics/sync-ads")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Meta token tekshiruvi")
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help=".env fayliga META_ACCESS_TOKEN, META_AD_ACCOUNT_ID, IG_BUSINESS_ID yozish",
+    )
+    parser.add_argument(
+        "--no-input",
+        action="store_true",
+        help="Interaktiv so'rov yo'q — faqat .env yoki META_ACCESS_TOKEN muhit o'zgaruvchisi",
+    )
+    args = parser.parse_args()
+
+    print("=" * 62)
+    print("META TOKEN TEKSHIRUVI")
     print("=" * 62 + "\n")
+
+    token = read_token(interactive=not args.no_input)
+    if not token:
+        print("\nToken topilmadi.")
+        print("1. business.facebook.com → System Users → Generate Token")
+        print("2. .env ga yozing: META_ACCESS_TOKEN=EAAG...")
+        print("3. Qayta ishga tushiring: python scripts/check_meta_token.py --apply")
+        sys.exit(1)
+
+    result = validate_token(token)
+    print_report(token, result)
+
+    print("\n" + "=" * 62)
+    if args.apply:
+        if not result["ok"]:
+            sys.exit(1)
+        apply_to_env(token, result)
+    elif result["ad_account_id"] or result["ig_id"]:
+        print("Saqlash: python scripts/check_meta_token.py --apply")
+    else:
+        print("Kerakli ID'lar topilmadi — yuqoridagi xatolarni tuzating.")
+    print("=" * 62 + "\n")
+
+    if not result["ok"]:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
