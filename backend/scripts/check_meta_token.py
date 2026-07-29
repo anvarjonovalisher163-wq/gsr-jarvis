@@ -20,7 +20,7 @@ import sys
 
 import httpx
 
-from meta_env import clean_token, is_placeholder, read_meta_from_env, write_meta_to_env
+from meta_env import clean_token, diagnose_env, is_placeholder, read_meta_from_env, write_meta_to_env
 
 GRAPH = "https://graph.facebook.com/v21.0"
 
@@ -224,10 +224,16 @@ def main() -> None:
 
     token = read_token(interactive=not args.no_input)
     if not token:
-        print("\nToken topilmadi.")
-        print("1. business.facebook.com → System Users → Generate Token")
-        print("2. .env ga yozing: META_ACCESS_TOKEN=EAAG...")
-        print("3. Qayta ishga tushiring: python scripts/check_meta_token.py --apply")
+        print("\nToken topilmadi.\n")
+        for hint in diagnose_env():
+            print(f"  • {hint}")
+        print("\nTekshiring:")
+        print("  • Fayl repo ildizida bo'lsin:  gsr-jarvis/.env")
+        print("  • Qator shakli:               META_ACCESS_TOKEN=EAAG...")
+        print("  • Bo'shliqsiz:                META_ACCESS_TOKEN=EAAG ( = atrofida probel yo'q)")
+        print("  • Token faqat bir marta ko'rinadi — to'liq nusxalanganini tekshiring")
+        print("\nToken qo'yganingizdan keyin:")
+        print("  python scripts/check_meta_token.py --apply")
         sys.exit(1)
 
     result = validate_token(token)

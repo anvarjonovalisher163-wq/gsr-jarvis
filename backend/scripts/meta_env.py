@@ -40,14 +40,64 @@ def read_meta_from_env() -> dict[str, str]:
     if not path:
         return out
     for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+        raw = line.strip()
+        if not raw or raw.startswith("#"):
             continue
-        key, _, value = line.partition("=")
+        # export META_ACCESS_TOKEN=... (bash uslubi)
+        if raw.lower().startswith("export "):
+            raw = raw[7:].strip()
+        if "=" not in raw:
+            continue
+        key, _, value = raw.partition("=")
         key = key.strip()
         if key in out:
             out[key] = value.strip().strip('"').strip("'")
     return out
+
+
+def diagnose_env() -> list[str]:
+    """Token topilmasa sababni tushuntiradi (qiymatni ko'rsatmaydi)."""
+    hints: list[str] = []
+    path = env_path()
+    if not path:
+        hints.append(".env fayli topilmadi — repo ildizida yoki backend/.env yarating.")
+        return hints
+
+    hints.append(f"O'qilayotgan fayl: {path}")
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if text.startswith("\ufeff"):
+        hints.append("Fayl BOM bilan boshlanadi — saqlashda UTF-8 (BOMsiz) tanlang.")
+
+    found_key = False
+    for i, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if stripped.lower().startswith("export "):
+            stripped = stripped[7:].strip()
+        if not stripped.startswith("META_ACCESS_TOKEN"):
+            continue
+        found_key = True
+        if stripped.startswith("#"):
+            hints.append(f"Qator {i}: META_ACCESS_TOKEN IZOH sifatida (#) — # ni olib tashlang.")
+            continue
+        if "=" not in stripped:
+            hints.append(f"Qator {i}: '=' belgisi yo'q — META_ACCESS_TOKEN=EAAG... ko'rinishida yozing.")
+            continue
+        _, _, val = stripped.partition("=")
+        val = clean_token(val)
+        if not val:
+            hints.append(
+                f"Qator {i}: META_ACCESS_TOKEN= bor, lekin QIYMAT BO'SH — "
+                "tenglik belgisidan keyin tokenni qo'ying."
+            )
+        elif is_placeholder(val):
+            hints.append(f"Qator {i}: qiymat namuna/placeholder — haqiqiy tokenni qo'ying.")
+        else:
+            hints.append(f"Qator {i}: token bor ({len(val)} belgi) — skript o'qishi kerak.")
+        break
+
+    if not found_key:
+        hints.append("META_ACCESS_TOKEN qatori yo'q — .env ga qo'shing: META_ACCESS_TOKEN=EAAG...")
+    return hints
 
 
 def write_meta_to_env(values: dict[str, str]) -> Path:

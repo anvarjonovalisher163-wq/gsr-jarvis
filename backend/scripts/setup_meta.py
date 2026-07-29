@@ -12,6 +12,7 @@ import argparse
 import sys
 
 from check_meta_token import apply_to_env, print_report, read_token, validate_token
+from meta_env import diagnose_env
 
 GUIDE = """
 ╔══════════════════════════════════════════════════════════════╗
@@ -68,8 +69,10 @@ def main() -> None:
 
     token = read_token(interactive=False)
     if not token:
-        print("\n.env da META_ACCESS_TOKEN hali yo'q.")
-        print("Yuqoridagi 6-qadamni bajaring, keyin qayta ishga tushiring:")
+        print("\n.env da META_ACCESS_TOKEN o'qilmadi.\n")
+        for hint in diagnose_env():
+            print(f"  • {hint}")
+        print("\nYuqoridagi 6-qadamni bajaring, keyin qayta ishga tushiring:")
         print("  python scripts/setup_meta.py --apply")
         sys.exit(1)
 
