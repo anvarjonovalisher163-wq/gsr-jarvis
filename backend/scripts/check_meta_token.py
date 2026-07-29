@@ -3,26 +3,75 @@
 Tokeningizni tekshiradi, ruxsatlarni ko'rsatadi va .env uchun kerakli
 ID'larni (ad account, Instagram business) o'zi topib beradi.
 
-Ishlatish (backend/ ichida, venv aktiv):
+Eng oson yo'l — tokenni .env fayliga yozib qo'ying:
+
+    META_ACCESS_TOKEN=EAAG...
+
+so'ng backend/ ichida:
 
     python scripts/check_meta_token.py
 
-Token so'raladi — ekranda ko'rinmaydi. Yoki oldindan bering:
-
-    # Linux/VPS
-    export META_ACCESS_TOKEN="EAAG..."
-    python scripts/check_meta_token.py
+Skript tokenni .env dan o'zi topadi. Agar u yerda bo'lmasa, so'raydi.
 
 Skript hech narsani o'zgartirmaydi — faqat o'qiydi va hisobot beradi.
-Token hech qayerga yuborilmaydi, faqat graph.facebook.com ga.
+Token faqat graph.facebook.com ga yuboriladi, boshqa hech qayerga.
 """
 import getpass
 import os
 import sys
+from pathlib import Path
 
 import httpx
 
 GRAPH = "https://graph.facebook.com/v21.0"
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+def clean(raw: str) -> str:
+    """Terminal va nusxalash artefaktlarini olib tashlaydi."""
+    token = raw.strip().strip('"').strip("'").strip()
+    # Sometimes the whole KEY=value line gets pasted
+    if token.upper().startswith("META_ACCESS_TOKEN="):
+        token = token.split("=", 1)[1].strip().strip('"').strip("'")
+    return "".join(token.split())  # drop stray spaces / newlines
+
+
+def token_from_env_file() -> str:
+    """.env faylidan META_ACCESS_TOKEN ni o'qiydi (repo ildizi yoki backend/)."""
+    for candidate in (REPO_ROOT / ".env", REPO_ROOT / "backend" / ".env"):
+        if not candidate.is_file():
+            continue
+        for line in candidate.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if line.startswith("META_ACCESS_TOKEN=") and not line.startswith("#"):
+                value = clean(line.split("=", 1)[1])
+                if value and "REPLACE" not in value.upper():
+                    print(f"Token {candidate} faylidan olindi.")
+                    return value
+    return ""
+
+
+def read_token() -> str:
+    token = clean(os.environ.get("META_ACCESS_TOKEN") or "")
+    if token:
+        print("Token muhit o'zgaruvchisidan olindi.")
+        return token
+
+    token = token_from_env_file()
+    if token:
+        return token
+
+    print("Token .env faylida topilmadi.")
+    print("Uni shu yerga qo'ying yoki .env fayliga yozing:  META_ACCESS_TOKEN=EAAG...\n")
+    try:
+        token = clean(getpass.getpass("Token (ko'rinmaydi): "))
+    except Exception:
+        token = ""
+    if not token:
+        # Some Windows terminals refuse paste into a hidden prompt
+        print("(yashirin kiritish ishlamadi — ochiq holda so'raladi)")
+        token = clean(input("Token: "))
+    return token
 
 # What each module needs
 NEEDED = {
@@ -47,24 +96,40 @@ def get(client: httpx.Client, path: str, token: str, **params) -> dict:
 
 
 def main() -> None:
-    token = os.environ.get("META_ACCESS_TOKEN") or ""
-    if not token:
-        print("Meta access tokenni kiriting (yozganingiz ekranda ko'rinmaydi):")
-        token = getpass.getpass("Token: ").strip()
+    print("=" * 62)
+    print("META TOKEN TEKSHIRUVI")
+    print("=" * 62 + "\n")
+
+    token = read_token()
     if not token:
         sys.exit("Token berilmadi.")
 
-    print("\n" + "=" * 62)
-    print("META TOKEN TEKSHIRUVI")
-    print("=" * 62)
+    # Diagnostics that do not reveal the token itself — enough to spot a
+    # truncated or mis-pasted value before blaming Meta.
+    print(f"\nQabul qilindi: {len(token)} belgi, boshlanishi '{token[:4]}...'")
+    if len(token) < 50:
+        print(f"{WARN} Token juda qisqa. To'liq nusxalanmagan bo'lishi mumkin —")
+        print("        Meta System User tokeni odatda 180-250 belgi bo'ladi.")
+    if not token.startswith("EAA"):
+        print(f"{WARN} Token 'EAA' bilan boshlanmadi. Meta tokenlari shunday boshlanadi —")
+        print("        boshqa qiymat nusxalangan bo'lishi mumkin.")
 
     with httpx.Client() as client:
         # --- 1. Token umuman ishlaydimi ---
         me = get(client, "me", token, fields="id,name")
         if "error" in me:
-            print(f"\n{NO} Token ishlamadi: {me['error'].get('message')}")
-            print("\nSabablari odatda: token muddati tugagan, noto'g'ri nusxalangan,")
-            print("yoki ilova (app) o'chirilgan. Yangi token oling.")
+            msg = me["error"].get("message", "")
+            print(f"\n{NO} Token ishlamadi: {msg}")
+            if "parse" in msg.lower():
+                print("\n'Cannot parse' — token buzuq yoki to'liq emas. Odatda sabab:")
+                print("  * terminalga to'liq qo'yilmagan (PowerShell'da yashirin")
+                print("    kiritishga Ctrl+V har doim ham o'tmaydi)")
+                print("  * nusxalashda bir qismi tushib qolgan")
+                print("\nYECHIM: tokenni .env fayliga yozing va skriptni qayta")
+                print("ishga tushiring — u o'zi o'qib oladi:")
+                print("  META_ACCESS_TOKEN=EAAG...")
+            else:
+                print("\nSabablari odatda: token muddati tugagan yoki ilova o'chirilgan.")
             sys.exit(1)
         print(f"\n{OK} Token amal qilyapti — {me.get('name', '?')} (id {me.get('id')})")
 
