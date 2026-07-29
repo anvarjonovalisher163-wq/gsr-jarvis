@@ -18,6 +18,15 @@ import getpass
 import os
 import sys
 
+# Some terminals (Windows legacy codepages, certain shell wrappers) cannot
+# encode the em-dashes and bullets used throughout this script's output —
+# on cp1251 that crashes outright; elsewhere it silently mangles the text
+# into replacement characters. UTF-8 with errors="replace" is safe on every
+# platform and guarantees readable (or at worst harmlessly degraded) output.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 import httpx
 
 from meta_env import clean_token, diagnose_env, is_placeholder, read_meta_from_env, write_meta_to_env

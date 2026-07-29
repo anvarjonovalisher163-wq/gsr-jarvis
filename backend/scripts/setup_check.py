@@ -16,9 +16,29 @@ import secrets
 import sys
 from pathlib import Path
 
+# Windows terminals commonly default to a legacy codepage (cp1251, cp866...)
+# that cannot encode ✓/⚠/✗, which crashed this script before a single check
+# ran. UTF-8 is safe everywhere: Linux terminals are already UTF-8, and
+# errors="replace" guarantees this never raises even on an unusual codepage.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 BACKEND_DIR = REPO_ROOT / "backend"
 ENV_FILE = REPO_ROOT / ".env"
+
+
+def venv_python() -> Path | None:
+    """venv's python, whichever OS layout exists (POSIX venv/bin/python vs
+    Windows venv/Scripts/python.exe). Returns None if no venv is found."""
+    for candidate in (
+        BACKEND_DIR / "venv" / "bin" / "python",
+        BACKEND_DIR / "venv" / "Scripts" / "python.exe",
+    ):
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 def _load_env() -> dict[str, str]:
@@ -107,8 +127,7 @@ def check_step_1() -> bool:
     else:
         _ok(f"Python {sys.version_info.major}.{sys.version_info.minor}")
 
-    venv_py = BACKEND_DIR / "venv" / "bin" / "python"
-    if venv_py.is_file():
+    if venv_python():
         _ok("venv mavjud (backend/venv)")
     else:
         _warn("venv topilmadi — backend/venv yarating")
@@ -183,8 +202,7 @@ def check_step_3() -> bool:
 def check_step_4() -> bool:
     import subprocess
 
-    venv_py = BACKEND_DIR / "venv" / "bin" / "python"
-    py = str(venv_py) if venv_py.is_file() else sys.executable
+    py = str(venv_python() or sys.executable)
     result = subprocess.run(
         [py, "-m", "pytest", "tests", "-q", "--tb=no"],
         cwd=BACKEND_DIR,
@@ -202,6 +220,14 @@ def check_step_4() -> bool:
 
 
 def check_step_5() -> bool:
+    """Meta va Instagram mustaqil ravishda ishlaydi (REJA.md).
+
+    Instagram akkaunt biriktirilmagan bo'lishi mumkin (masalan parol
+    tiklanmaguncha) — bu Meta Ads/ROI ishlashiga to'sqinlik qilmasligi
+    kerak, shuning uchun ig_id yo'qligi faqat ogohlantirish, qadamni
+    "bajarilmadi" deb belgilamaydi (aks holda 6-8 qadamlar asossiz
+    bloklanib qolardi).
+    """
     env = _load_env()
     token = env.get("META_ACCESS_TOKEN", "")
     ad_id = env.get("META_AD_ACCOUNT_ID", "")
@@ -221,8 +247,7 @@ def check_step_5() -> bool:
     else:
         _ok("META_AD_ACCOUNT_ID bor")
     if _placeholder(ig_id):
-        _warn("IG_BUSINESS_ID yo'q — Instagram statistikasi ishlamaydi")
-        ok = False
+        _warn("IG_BUSINESS_ID yo'q — Instagram statistikasi ishlamaydi (ixtiyoriy, keyinroq qo'shsa bo'ladi)")
     else:
         _ok("IG_BUSINESS_ID bor")
     return ok

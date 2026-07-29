@@ -11,6 +11,12 @@ from __future__ import annotations
 import argparse
 import sys
 
+# See setup_check.py for why this is needed — legacy Windows codepages
+# cannot encode the box-drawing characters in GUIDE below.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 from check_meta_token import apply_to_env, print_report, read_token, validate_token
 from meta_env import diagnose_env
 

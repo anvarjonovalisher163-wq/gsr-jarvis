@@ -68,13 +68,23 @@ pip install -r requirements.txt
 
 ## 3. .env sozlash
 
+Eng tez yo'l — avtomatik generatsiya (parol hash, JWT va CRM kalitlarini o'zi yaratadi):
+
+```bash
+cd /opt/gsr-jarvis/backend
+source venv/bin/activate
+python scripts/bootstrap_env.py
+```
+
+Dev parol standart bo'yicha `jarvis-dev-2026` — o'zgartirish: `--password "boshqa-parol"`. Mavjud `.env`ni ustidan yozmaydi; qayta yaratish uchun `--force` (eski nusxa `.env.bak` ga zaxiralanadi).
+
+Yoki qo'lda:
+
 ```bash
 cd /opt/gsr-jarvis
 cp .env.example .env
 nano .env
 ```
-
-Kalitlarni tayyorlash (venv aktiv holda, `backend/` ichida):
 
 ```bash
 # Parol hash (OWNER_PASSWORD_HASH uchun)
@@ -88,6 +98,15 @@ python scripts/generate_vapid_keys.py
 ```
 
 `.env` da to'ldirilishi shart: `ANTHROPIC_API_KEY`, `OWNER_LOGIN`, `OWNER_PASSWORD_HASH`, `JWT_SECRET`. Qolganlari ixtiyoriy (pastda).
+
+### O'rnatish holatini istalgan payt tekshirish
+
+```bash
+python scripts/setup_check.py            # barcha 8 qadam
+python scripts/setup_check.py --step 5    # faqat bitta qadam (masalan Meta)
+```
+
+Faqat o'qiydi — hech narsani o'zgartirmaydi. Har qadamni tekshiradi: Python muhiti → `.env` → baza → testlar → Meta token → frontend build → VPS → CRM. Birinchi muvaffaqiyatsiz **majburiy** qadamda to'xtaydi va nima qilish kerakligini ko'rsatadi (Meta/Instagram va VPS/CRM qadamlari ixtiyoriy — ular yo'qligi keyingi qadamlarni bloklamaydi).
 
 ## 4. Seed — namunaviy ma'lumot
 
@@ -225,32 +244,33 @@ Bitta token uchta ishni ochadi: reklama xarajati (ROI), Instagram statistikasi v
 
 > Tezroq sinash uchun [Graph API Explorer](https://developers.facebook.com/tools/explorer) orqali ham token olsa bo'ladi, lekin u 1-2 soatda tugaydi. Doimiy ishlash uchun System User tokeni kerak.
 
-## Tokenni tekshirish
+## Tokenni tekshirish va saqlash
 
-Token qo'lingizda bo'lgach, VPS'da (yoki lokalda) ishga tushiring:
+Eng tez yo'l — yo'riqnoma + tekshiruv + saqlash bitta buyruqda:
 
 ```bash
 cd /opt/gsr-jarvis/backend
 source venv/bin/activate
-python scripts/check_meta_token.py
+python scripts/setup_meta.py --apply
 ```
 
-Skript tokenni so'raydi (ekranda ko'rinmaydi), so'ng:
+Tokenni oldin `.env` fayliga qo'ying (`META_ACCESS_TOKEN=EAAG...`) — skript uni o'zi o'qiydi. Yo'riqnomasiz, faqat tekshirish uchun:
+
+```bash
+python scripts/check_meta_token.py          # faqat ko'rsatadi, .env ga tegmaydi
+python scripts/check_meta_token.py --apply  # tekshiradi va topilgan ID'larni .env ga yozadi
+```
+
+Ikkalasi ham:
 
 - qaysi ruxsatlar berilgan va qaysi biri yetishmayotganini ko'rsatadi
 - reklama akkauntingiz va Instagram business ID'ni **o'zi topib beradi**
 - xarajat va statistikani haqiqatan o'qib ko'radi
-- oxirida `.env` ga qo'yiladigan qatorlarni tayyor holda chiqaradi
+- token topilmasa sababini aniqlaydi (bo'sh qator, izohga aylangan qator, BOM va h.k.) — qiymatning o'zini ko'rsatmasdan
 
-Skript hech narsani o'zgartirmaydi — faqat o'qiydi.
+`--apply` faqat `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `IG_BUSINESS_ID` qatorlarini yangilaydi — qolgan sozlamalarga tegmaydi. `--apply` siz skript hech narsani o'zgartirmaydi, faqat o'qiydi.
 
-## .env va qayta ishga tushirish
-
-```
-META_ACCESS_TOKEN=EAAG...
-META_AD_ACCOUNT_ID=1234567890
-IG_BUSINESS_ID=1784...
-```
+So'ng qayta ishga tushiring:
 
 ```bash
 sudo systemctl restart gsr-jarvis

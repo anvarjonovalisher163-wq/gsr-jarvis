@@ -10,9 +10,16 @@ from __future__ import annotations
 
 import argparse
 import secrets
+import sys
 from pathlib import Path
 
 import bcrypt
+
+# See setup_check.py for why this is needed — legacy Windows codepages
+# cannot encode the em-dashes used in this script's output.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 ENV_FILE = REPO_ROOT / ".env"
