@@ -120,12 +120,17 @@ CRM tomonidagi kodni siz yozasiz, shuning uchun shakl oldindan kelishiladi.
 
 ROI hisoblanishi uchun tizim reklama xarajatini CRM lidiga bog'lashi kerak. Bog'lanish **nom orqali** amalga oshadi: Meta'dagi ad set nomi CRM'dagi lead manbasi bilan bir xil bo'lishi kerak (katta-kichik harf, probel, tire va pastki chiziq hisobga olinmaydi).
 
-Misol — bular bir-biriga mos keladi:
+**Haqiqiy ad set nomlari (Meta'dan o'qildi, 2026-07-29):** kampaniya `Yuk tashish - Lidlar`, uchta ad set:
 
-| Meta ad set nomi | CRM manba qiymati |
+| Meta ad set nomi | CRM `source` maydoniga yoziladigan qiymat |
 |---|---|
-| `Meta Segment 1` | `meta_segment_1` |
-| `Segment 2 Importyorlar` | `segment-2-importyorlar` |
+| `Auditoriya 1` | `Auditoriya 1` yoki `auditoriya_1` |
+| `Auditoriya 2` | `Auditoriya 2` yoki `auditoriya_2` |
+| `Auditoriya 3` | `Auditoriya 3` yoki `auditoriya_3` |
+
+Katta-kichik harf, probel, tire va pastki chiziq hisobga olinmaydi — `Auditoriya 1`, `auditoriya-1` va `AUDITORIYA_1` bir xil deb qabul qilinadi. Faqat harf va raqamlar mos kelishi kerak.
+
+**Sherikka aytiladigan gap:** Meta'dan kelgan lidning `source` maydoniga aynan shu uch qiymatdan birini yozsin. Boshqa kanallar uchun ixtiyoriy nom (`telegram`, `tavsiya`, `instagram_organik`) — ular reklama bilan bog'lanmaydi va "reklamasiz kelgan lidlar" bo'limida ko'rinadi.
 
 Mos kelmasa tizim **jim qolmaydi**: bunday ad set "CRM bilan bog'lanmagan" belgisi bilan ko'rsatiladi va tavsiyalar ro'yxatida "tekshiring" chiqadi. Ya'ni nomlanish xatosi yashirin qolmaydi, lekin uni odam tuzatishi kerak — buni avtomatik taxmin qilish noto'g'ri hisob-kitobga olib kelishi mumkin.
 
