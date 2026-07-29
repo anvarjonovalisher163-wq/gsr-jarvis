@@ -299,6 +299,59 @@ DATABASE_URL=postgresql+psycopg://jarvis:kuchli-parol@localhost/jarvis
 
 `sudo systemctl restart gsr-jarvis` — jadvallar avtomatik yaratiladi (eski ma'lumotni ko'chirish kerak bo'lsa `pgloader` ishlating yoki `seed.py` ni qayta ishga tushiring).
 
+# Lokal ishga tushirish (HTTPS)
+
+Dev server HTTPS'da ishlaydi. Bu maxfiylik uchun emas: brauzer service worker'ni ro'yxatdan o'tkazishi, ilovani PWA sifatida o'rnatishi va push yuborishi uchun `localhost` dan tashqarida **HTTPS shart**. Telefonda sinash faqat shu yo'l bilan ishlaydi.
+
+## Bir martalik tayyorgarlik — ishonchli sertifikat
+
+Oddiy self-signed sertifikat yetarli emas: brauzer unga ishonmaydi va **service worker'ni umuman ro'yxatdan o'tkazmaydi**, ya'ni PWA ishlamaydi. Shuning uchun `mkcert` — u mahalliy ishonchli sertifikat markazini o'rnatadi.
+
+```bash
+winget install FiloSottile.mkcert     # Windows
+mkcert -install                        # ishonchli CA ni tizimga qo'shadi
+
+cd frontend
+mkdir certs && cd certs
+mkcert -cert-file dev-cert.pem -key-file dev-key.pem localhost 127.0.0.1 ::1 <KOMPYUTER-IP>
+```
+
+`<KOMPYUTER-IP>` — Wi-Fi tarmoqdagi manzilingiz (`ipconfig` da ko'rinadi, masalan `192.168.68.107`). Telefonda ochish uchun kerak.
+
+Sertifikatlar `.gitignore` da — repoga tushmaydi.
+
+Agar `certs/` papkasi bo'lmasa, dev server baribir ishga tushadi (self-signed bilan), lekin brauzer ogohlantiradi va PWA funksiyalari o'chiq bo'ladi.
+
+## Kundalik ishlash
+
+```bash
+# 1-terminal — backend
+cd backend && venv\Scripts\python.exe -m uvicorn app.main:app --port 8000
+
+# 2-terminal — frontend
+cd frontend && npm run dev
+```
+
+Ochiladi: `https://localhost:5173`
+
+## PWA'ni telefonda sinash
+
+Dev rejimida service worker **ataylab o'chirilgan** — u yerda modul manzillari hash'siz (`/src/App.jsx`), keshlansa har tahrirdan keyin eski kod ko'rinaverardi.
+
+PWA'ni sinash uchun haqiqiy build kerak:
+
+```bash
+cd frontend
+npm run build
+npm run preview
+```
+
+Telefonda oching: `https://<KOMPYUTER-IP>:4173`
+
+Telefon sertifikatga ishonishi uchun mkcert ildiz sertifikatini unga ham o'rnatish kerak (`mkcert -CAROOT` papkasidagi `rootCA.pem` faylini telefonga yuborib o'rnatasiz). Busiz brauzer ogohlantiradi va service worker ro'yxatdan o'tmaydi.
+
+Ishlab chiqarishda bu muammo yo'q — nginx certbot bilan haqiqiy sertifikat beradi.
+
 # Kod bilan ishlash (GitHub)
 
 Repo: [github.com/anvarjonovalisher163-wq/gsr-jarvis](https://github.com/anvarjonovalisher163-wq/gsr-jarvis) — **private**.
