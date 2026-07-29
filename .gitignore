@@ -20,6 +20,9 @@ frontend/certs/
 *.db
 *.db-journal
 
+# AI-generated post images
+backend/media/
+
 # Node / frontend
 node_modules/
 frontend/dist/

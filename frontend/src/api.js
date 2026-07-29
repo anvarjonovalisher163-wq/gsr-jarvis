@@ -64,6 +64,7 @@ export const api = {
   // content
   plan: () => request("/content/plan"),
   generatePlan: () => request("/content/generate", { method: "POST", body: {} }),
+  generateImage: (id) => request(`/content/${id}/generate-image`, { method: "POST" }),
   updatePost: (id, patch) => request(`/content/${id}`, { method: "PATCH", body: patch }),
   approvePost: (id) => request(`/content/${id}/approve`, { method: "POST" }),
   rejectPost: (id) => request(`/content/${id}/reject`, { method: "POST" }),

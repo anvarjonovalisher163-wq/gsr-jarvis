@@ -630,6 +630,21 @@ textarea:focus {
   word-break: break-word;
 }
 
+.post-images {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.post-image-thumb {
+  width: 84px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+
 .edit-form {
   display: flex;
   flex-direction: column;

@@ -284,11 +284,28 @@ export default function ShtabTab() {
                         </pre>
                         <div className="post-hashtags mono">{post.hashtags}</div>
                         {JSON.parse(post.image_urls || "[]").length > 0 && (
-                          <div className="post-meta mono">
-                            🖼 {JSON.parse(post.image_urls).length} ta rasm biriktirilgan
+                          <div className="post-images">
+                            {JSON.parse(post.image_urls).map((url, i) => (
+                              <img key={i} src={url} alt="" className="post-image-thumb" />
+                            ))}
                           </div>
                         )}
                         <div className="btn-row">
+                          {post.status !== "published" && (
+                            <button
+                              className="btn btn-outline"
+                              disabled={busy === `img-${post.id}`}
+                              onClick={() =>
+                                run(
+                                  `img-${post.id}`,
+                                  () => api.generateImage(post.id),
+                                  "Rasm yaratildi"
+                                )
+                              }
+                            >
+                              {busy === `img-${post.id}` ? "Yaratilmoqda…" : "🖼 Rasm yaratish"}
+                            </button>
+                          )}
                           {post.status !== "published" && post.status !== "approved" && (
                             <button
                               className="btn btn-primary"

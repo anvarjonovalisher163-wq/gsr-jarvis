@@ -1,9 +1,11 @@
 """GSR Jarvis — FastAPI application entrypoint."""
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .database import Base, engine, ensure_columns
@@ -64,6 +66,12 @@ app.include_router(publish.router, prefix="/api/publish", tags=["publish"])
 app.include_router(push_router.router, prefix="/api/push", tags=["push"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(seasons_router.router, prefix="/api/seasons", tags=["seasons"])
+
+# AI-generated post images (see modules/imagegen.py). Created on demand so a
+# fresh clone doesn't need the directory pre-created.
+MEDIA_DIR = Path(__file__).resolve().parent.parent / "media"
+MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 
 
 @app.get("/api/health")

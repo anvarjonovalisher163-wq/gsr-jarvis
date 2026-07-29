@@ -36,6 +36,13 @@ const apiProxy = {
     target: "http://127.0.0.1:8000",
     changeOrigin: true,
   },
+  // AI-generated post images (see backend/app/modules/imagegen.py), served
+  // by the backend's own /media mount — same proxy pattern as /api so the
+  // Shtab tab can preview them in dev without a CORS/cert detour.
+  "/media": {
+    target: "http://127.0.0.1:8000",
+    changeOrigin: true,
+  },
 };
 
 export default defineConfig({

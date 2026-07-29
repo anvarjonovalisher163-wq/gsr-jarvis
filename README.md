@@ -195,6 +195,28 @@ Token yuqoridagi bo'limda olinadi — qo'shimcha sozlash kerak emas.
 
 **Xavfsizlik:** hech qanday post avtomatik joylanmaydi. Joylash faqat siz "Instagramga joylash" tugmasini bosganingizda sodir bo'ladi va faqat tasdiqlangan postlar uchun ishlaydi.
 
+# Rasm generatsiyasi
+
+Postlarga rasm avtomatik biriktirish uchun **OpenAI**ning rasm API'si ishlatiladi. **Canva emas** — tekshirilib, Canva Connect API (Autofill/shablon to'ldirish) faqat **Canva Enterprise** tarifida ishlashi Canva'ning o'z hujjatidan tasdiqlandi (Pro/Teams'da yo'q, yillik shartnoma talab qiladi). OpenAI esa oddiy API kalit bilan ishlaydi, bir rasm narxi ~$0.02–$0.19 (`IMAGE_QUALITY` ga qarab).
+
+## Sozlash
+
+1. [platform.openai.com](https://platform.openai.com) da API kalit yarating.
+2. `.env` ga qo'shing:
+
+   ```
+   IMAGE_PROVIDER=openai
+   IMAGE_PROVIDER_API_KEY=sk-...
+   IMAGE_QUALITY=medium
+   PUBLIC_BASE_URL=https://jarvis.gsr.uz
+   ```
+
+3. `sudo systemctl restart gsr-jarvis`
+
+`PUBLIC_BASE_URL` — Instagram generatsiya qilingan rasmni shu manzil orqali yuklab oladi. **Faqat haqiqiy VPS domenida ishlaydi** — Instagram serverlari lokal yoki LAN manzilga (localhost, 192.168.x.x) kira olmaydi, shuning uchun rasm generatsiyasini to'liq (joylashgacha) sinash faqat production'da mumkin. Lokalda rasm yaratiladi va Shtab'da ko'rinadi, lekin Instagramga real joylash faqat VPS'dan ishlaydi.
+
+Rasm 1080x1080 (post) yoki 1080x1350 (karusel/portret) nisbatida saqlanadi — OpenAI eng yaqin o'lchamda (1024x1024 yoki 1024x1536) generatsiya qiladi, portret holatda Instagram limitiga moslab avtomatik kesiladi (markazdan).
+
 # CRM ulash (webhook)
 
 Lidlar sizning CRM'ingizda qoladi — Jarvis ularni faqat o'qib tahlil qiladi, o'zi lead yaratmaydi.
@@ -421,5 +443,5 @@ sudo systemctl restart gsr-jarvis
 - Yangi scheduled vazifa: `backend/app/scheduler.py` (⚠️ publisher'ni import qilmang — xavfsizlik qoidasi).
 - **Modelga yangi ustun qo'shsangiz** `main.py` dagi `MIGRATIONS` lug'atiga yozing — `create_all()` faqat yangi jadval yaratadi, mavjud jadvalga ustun qo'shmaydi.
 - **Mavsumiy kalendar** har yili yangilanishi kerak: `app/modules/seasons.py` dagi `LUNAR` jadvaliga keyingi yil sanalarini qo'shing (hozir 2026-2028 qamrab olingan). Yil yetishmasa o'sha bayram jimgina tushib qoladi, xato bermaydi.
-- Rasm generatsiyasi: `backend/app/modules/imagegen.py` dagi shablon bo'yicha provayder yozing va `.env` da `IMAGE_PROVIDER` ni o'rnating (rasm ochiq URL'da joylashishi shart).
+- Rasm generatsiyasi: `IMAGE_PROVIDER=openai` tayyor (yuqoridagi bo'lim). Boshqa provayder kerak bo'lsa `backend/app/modules/imagegen.py` dagi `ImageProvider` shabloni bo'yicha yozing.
 - Kunlik jadval: barcha vaqtlar `Asia/Tashkent` bo'yicha (`.env` `TIMEZONE`).

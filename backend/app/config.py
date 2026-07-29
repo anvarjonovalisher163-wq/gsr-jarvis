@@ -55,6 +55,13 @@ class Settings(BaseSettings):
     # --- Image generation ---
     image_provider: str = "stub"
     image_provider_api_key: str = ""
+    image_quality: str = "medium"  # low | medium | high (OpenAI cost/quality tradeoff)
+    # Public origin used to build the URL Meta/Instagram fetches generated
+    # images from. Prod: https://jarvis.gsr.uz. Dev: https://localhost:5173
+    # (proxied to the backend, see vite.config.js) — Instagram itself can
+    # never reach a local/LAN address, so real publishing only works from
+    # the real VPS regardless of this setting.
+    public_base_url: str = ""
 
     # --- Misc ---
     timezone: str = "Asia/Tashkent"

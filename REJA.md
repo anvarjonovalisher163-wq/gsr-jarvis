@@ -169,7 +169,7 @@ Ad Library **veb-sayti** esa butun dunyo bo'yicha ochiq — raqobatchilarni u ye
 - Sotuvga yo'naltirilgan tuzilma (3P yoki tanlangan freymvork)
 - Ikki tilli: har bir g'oyaning o'zbekcha va ruscha versiyasi
 - Mavsumiy bashorat: Xitoy bayramlari kalendari (Yangi yil, Golden Week) asosida oldindan "hozir buyurtma bering" signali
-- Haftasiga 2-3 rasmli/karusel post — Canva API orqali brend ohangida
+- Haftasiga 2-3 rasmli/karusel post — rasm generatsiyasi orqali (pastga qarang)
 
 ### 2.2 Razvedka — chuqurlashtirilgan
 - Raqobatchi kontent rejalari — rasmiy pullik provayderlar orqali (Apify, Bright Data va shunga o'xshash). **To'g'ridan-to'g'ri scraping ishlatilmaydi** — ToS xavfi
@@ -218,12 +218,13 @@ Mantiq va funksionallik to'liq ishlagandan keyin: dashboard va UI'ni professiona
 | `app/modules/seasons.py` | Xitoy bayramlari kalendari va signallar |
 | `app/modules/content_factory.py` | Ikki tilli kontent-plan (mavsumga ulangan) |
 | `app/modules/strategy_advisor.py` | Oylik strategiya (haqiqiy raqamlar asosida) |
+| `app/modules/imagegen.py` | Rasm generatsiyasi (OpenAI) — Canva Enterprise talab qilgani uchun rad etildi |
 
 **Demo ma'lumot:** `python seed.py` (kontent-plan), `seed_leads.py` (120 lid), `seed_ads.py` (reklama xarajati), `seed_insights.py` (Instagram statistikasi). Har biri `--clear` bilan o'chiriladi. Demo yozuvlar borligi ilovada ogohlantirish sifatida ko'rsatiladi.
 
 **O'rnatish yordamchilari:** `bootstrap_env.py` (`.env`ni avtomatik kalitlar bilan yaratadi), `setup_check.py` (8 qadamli o'rnatish holatini tekshiradi, faqat o'qiydi), `setup_meta.py` / `check_meta_token.py --apply` (Meta tokenini tekshirib `.env`ga yozadi). To'liq tartib: README.md.
 
-**Testlar:** `python -m pytest tests -q` — 26 ta test, tashqi API'larga bog'liq emas, alohida vaqtinchalik bazada ishlaydi.
+**Testlar:** `python -m pytest tests -q` — 33 ta test, tashqi API'larga bog'liq emas, alohida vaqtinchalik bazada ishlaydi.
 
 **Meta tokeni kelgach nima bo'ladi:** `.env` ga `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID` va `IG_BUSINESS_ID` yoziladi, xizmat qayta ishga tushiriladi. Shundan keyin har kuni 06:00 da reklama xarajati, 06:10 da Instagram statistikasi avtomatik yangilanadi. Qo'lda: `POST /api/analytics/sync-ads`, `POST /api/analytics/sync-insights`. Kodda boshqa o'zgarish kerak emas.
 
