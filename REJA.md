@@ -221,6 +221,8 @@ Mantiq va funksionallik to'liq ishlagandan keyin: dashboard va UI'ni professiona
 
 **Demo ma'lumot:** `python seed.py` (kontent-plan), `seed_leads.py` (120 lid), `seed_ads.py` (reklama xarajati), `seed_insights.py` (Instagram statistikasi). Har biri `--clear` bilan o'chiriladi. Demo yozuvlar borligi ilovada ogohlantirish sifatida ko'rsatiladi.
 
+**O'rnatish yordamchilari:** `bootstrap_env.py` (`.env`ni avtomatik kalitlar bilan yaratadi), `setup_check.py` (8 qadamli o'rnatish holatini tekshiradi, faqat o'qiydi), `setup_meta.py` / `check_meta_token.py --apply` (Meta tokenini tekshirib `.env`ga yozadi). To'liq tartib: README.md.
+
 **Testlar:** `python -m pytest tests -q` — 26 ta test, tashqi API'larga bog'liq emas, alohida vaqtinchalik bazada ishlaydi.
 
 **Meta tokeni kelgach nima bo'ladi:** `.env` ga `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID` va `IG_BUSINESS_ID` yoziladi, xizmat qayta ishga tushiriladi. Shundan keyin har kuni 06:00 da reklama xarajati, 06:10 da Instagram statistikasi avtomatik yangilanadi. Qo'lda: `POST /api/analytics/sync-ads`, `POST /api/analytics/sync-insights`. Kodda boshqa o'zgarish kerak emas.
