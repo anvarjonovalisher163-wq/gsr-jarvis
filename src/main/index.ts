@@ -1,7 +1,12 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, dialog, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { handle } from './ipc'
+import { openDatabase, closeDatabase, dbPath } from './db'
+import { attachLoggerToDb, createLogger } from './logger'
+import { isEncryptionAvailable } from './security/crypto'
+
+const log = createLogger('app')
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -49,6 +54,25 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  try {
+    const { version } = openDatabase()
+    attachLoggerToDb()
+    console.log(`DB ready, version ${version}`)
+    log.info(`DB ready, version ${version}`, { path: dbPath() })
+  } catch (e) {
+    log.error("Ma'lumotlar bazasini ochib bo'lmadi", e)
+    dialog.showErrorBox(
+      'TG Manager',
+      "Ma'lumotlar bazasini ochib bo'lmadi. Ilova yopiladi.\n\n" + (e instanceof Error ? e.message : String(e))
+    )
+    app.quit()
+    return
+  }
+
+  if (!isEncryptionAvailable()) {
+    log.warn('safeStorage shifrlash mavjud emas — akkaunt qo\'shishda xato beriladi')
+  }
+
   registerIpc()
   createWindow()
 
@@ -59,4 +83,8 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('will-quit', () => {
+  closeDatabase()
 })

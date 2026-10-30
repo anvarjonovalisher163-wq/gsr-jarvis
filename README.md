@@ -35,6 +35,32 @@ Sozlamalar tabida ilova versiyasi ko'rinadi.
 | `npm run build:mac` | macOS `.dmg` (release/)                    |
 | `npm run build:win` | Windows NSIS installer (release/)          |
 
+## Native modullar (better-sqlite3)
+
+`npm install` oxirida `postinstall` avtomatik ravishda native modullarni Electron uchun qayta
+kompilyatsiya qiladi. Agar `npm install <paket>` bilan yangi native paket qo'shsangiz yoki
+"was compiled against a different Node.js version" xatosi chiqsa:
+
+```bash
+npx electron-builder install-app-deps
+```
+
+Windows'da kompilyatsiya kerak bo'lib qolsa (prebuilt topilmasa) Visual Studio Build Tools
+("Desktop development with C++") va Python 3 o'rnatilgan bo'lishi kerak.
+
+## Ma'lumotlar bazasi
+
+SQLite fayl `app.getPath('userData')` ichida: `tg-manager.db` (WAL rejimi).
+
+| OS      | Yo'l                                            |
+| ------- | ----------------------------------------------- |
+| macOS   | `~/Library/Application Support/tg-manager/`     |
+| Windows | `%APPDATA%\tg-manager\`                          |
+| Linux   | `~/.config/tg-manager/`                          |
+
+Migratsiyalar `src/main/db/migrations/` da, `schema_version` jadvali orqali boshqariladi.
+Sessiya va tokenlar `safeStorage` bilan shifrlanadi (`src/main/security/crypto.ts`).
+
 ## Loyiha tuzilishi
 
 ```
