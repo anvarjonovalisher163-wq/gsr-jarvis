@@ -87,6 +87,8 @@ import type { LogQuery, TaskView } from './tasks'
 import type { AppSettings } from './network'
 import type { LogEntry } from './types'
 import type { DialogsPage, MessageView } from './chats'
+import type { Contact, Tag } from './types'
+import type { ChannelViewsReport, StatsOverview } from './stats'
 
 /** Post nishoni (kanal) — kanal ma'lumotlari bilan. */
 export interface TargetView extends PostTarget {
@@ -251,6 +253,24 @@ export interface IpcChannels {
   /** Faylni saqlash dialogi bilan yuklab olish */
   'chats:download': { req: { accountId: number; peer: string; msgId: number }; res: { path: string | null } }
 
+  'tags:list': { req: void; res: Tag[] }
+  'tags:create': { req: { name: string; color: string }; res: Tag }
+  'tags:update': { req: { id: number; name?: string; color?: string }; res: Tag }
+  'tags:delete': { req: { id: number }; res: void }
+
+  /** Chat kontakt kartasi (teglar + eslatma). Kontakt yozuvi bo'lmasa bo'sh qaytadi. */
+  'contacts:get': { req: { accountId: number; peer: string }; res: { contact: Contact | null; tagIds: number[] } }
+  'contacts:setTags': { req: { accountId: number; peer: string; title: string; username: string | null; kind: string; tagIds: number[] }; res: void }
+  'contacts:setNote': { req: { accountId: number; peer: string; title: string; username: string | null; kind: string; note: string }; res: void }
+  /** Akkaunt bo'yicha peer → tagIds (dialog ro'yxati filtri uchun) */
+  'contacts:tagMap': { req: { accountId: number }; res: Record<string, number[]> }
+  'contacts:list': { req: { accountId?: number; tagId?: number; search?: string }; res: (Contact & { tagIds: number[] })[] }
+  'subscribers:setTags': { req: { id: number; tags: string[] }; res: void }
+
+  'stats:overview': { req: { days: number }; res: StatsOverview }
+  /** GramJS orqali kanal postlari ko'rishlari (ulangan akkauntlar) */
+  'stats:channelViews': { req: void; res: ChannelViewsReport[] }
+
   'app:getSettings': { req: void; res: AppSettings }
   'app:setSettings': { req: Partial<AppSettings>; res: AppSettings }
 }
@@ -333,6 +353,7 @@ export interface RendererApi {
     tags: (botId: number) => Promise<string[]>
     exportCsv: (botId: number) => Promise<{ path: string | null; count: number }>
     count: (botId: number, tag?: string | null) => Promise<number>
+    setTags: (id: number, tags: string[]) => Promise<void>
   }
   broadcasts: {
     list: (botId?: number) => Promise<BroadcastView[]>
@@ -378,6 +399,23 @@ export interface RendererApi {
     avatar: (accountId: number, peer: string) => Promise<string | null>
     thumb: (accountId: number, peer: string, msgId: number) => Promise<string | null>
     download: (accountId: number, peer: string, msgId: number) => Promise<{ path: string | null }>
+  }
+  tags: {
+    list: () => Promise<Tag[]>
+    create: (name: string, color: string) => Promise<Tag>
+    update: (id: number, patch: { name?: string; color?: string }) => Promise<Tag>
+    delete: (id: number) => Promise<void>
+  }
+  contacts: {
+    get: (accountId: number, peer: string) => Promise<{ contact: Contact | null; tagIds: number[] }>
+    setTags: (p: { accountId: number; peer: string; title: string; username: string | null; kind: string; tagIds: number[] }) => Promise<void>
+    setNote: (p: { accountId: number; peer: string; title: string; username: string | null; kind: string; note: string }) => Promise<void>
+    tagMap: (accountId: number) => Promise<Record<string, number[]>>
+    list: (f?: { accountId?: number; tagId?: number; search?: string }) => Promise<(Contact & { tagIds: number[] })[]>
+  }
+  stats: {
+    overview: (days: number) => Promise<StatsOverview>
+    channelViews: () => Promise<ChannelViewsReport[]>
   }
   app: {
     getVersion: () => Promise<string>

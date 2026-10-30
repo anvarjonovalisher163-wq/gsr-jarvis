@@ -20,6 +20,23 @@ const api: BridgeApi = {
     thumb: (accountId, peer, msgId) => invoke('chats:thumb', { accountId, peer, msgId }),
     download: (accountId, peer, msgId) => invoke('chats:download', { accountId, peer, msgId })
   },
+  tags: {
+    list: () => invoke('tags:list'),
+    create: (name, color) => invoke('tags:create', { name, color }),
+    update: (id, patch) => invoke('tags:update', { id, ...patch }),
+    delete: (id) => invoke('tags:delete', { id })
+  },
+  contacts: {
+    get: (accountId, peer) => invoke('contacts:get', { accountId, peer }),
+    setTags: (p) => invoke('contacts:setTags', p),
+    setNote: (p) => invoke('contacts:setNote', p),
+    tagMap: (accountId) => invoke('contacts:tagMap', { accountId }),
+    list: (f) => invoke('contacts:list', f ?? {})
+  },
+  stats: {
+    overview: (days) => invoke('stats:overview', { days }),
+    channelViews: () => invoke('stats:channelViews')
+  },
   app: {
     getVersion: () => invoke('app:getVersion'),
     getSettings: () => invoke('app:getSettings'),
@@ -86,7 +103,8 @@ const api: BridgeApi = {
     list: (q) => invoke('subscribers:list', q),
     tags: (botId) => invoke('subscribers:tags', { botId }),
     exportCsv: (botId) => invoke('subscribers:exportCsv', { botId }),
-    count: (botId, tag) => invoke('subscribers:count', { botId, tag })
+    count: (botId, tag) => invoke('subscribers:count', { botId, tag }),
+    setTags: (id, tags) => invoke('subscribers:setTags', { id, tags })
   },
   broadcasts: {
     list: (botId) => invoke('broadcasts:list', { botId }),

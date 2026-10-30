@@ -146,6 +146,19 @@ export const ipcSchemas = {
   'chats:thumb': z.object({ accountId: id, peer: peerKey, msgId: id }),
   'chats:download': z.object({ accountId: id, peer: peerKey, msgId: id }),
 
+  'tags:list': z.void(),
+  'tags:create': z.object({ name: shortText(40).min(1), color: z.string().regex(/^#[0-9a-fA-F]{6}$/) }),
+  'tags:update': z.object({ id, name: shortText(40).min(1).optional(), color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional() }),
+  'tags:delete': z.object({ id }),
+  'contacts:get': z.object({ accountId: id, peer: peerKey }),
+  'contacts:setTags': z.object({ accountId: id, peer: peerKey, title: shortText(200), username: shortText(64).nullable(), kind: shortText(16), tagIds: z.array(id).max(50) }),
+  'contacts:setNote': z.object({ accountId: id, peer: peerKey, title: shortText(200), username: shortText(64).nullable(), kind: shortText(16), note: shortText(4000) }),
+  'contacts:tagMap': z.object({ accountId: id }),
+  'contacts:list': z.object({ accountId: optionalId, tagId: optionalId, search: shortText(100).optional() }),
+  'subscribers:setTags': z.object({ id, tags: z.array(shortText(32)).max(30) }),
+  'stats:overview': z.object({ days: z.number().int().min(7).max(365) }),
+  'stats:channelViews': z.void(),
+
   'app:getSettings': z.void(),
   'app:setSettings': z.object({
     autoStart: z.boolean().optional(),

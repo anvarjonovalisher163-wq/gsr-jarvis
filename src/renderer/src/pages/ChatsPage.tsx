@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
-import { MessageSquare, Plus } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Info, MessageSquare, Plus } from 'lucide-react'
 import Placeholder from '@renderer/components/Placeholder'
 import DialogList from '@renderer/components/chats/DialogList'
 import MessageList from '@renderer/components/chats/MessageList'
 import Composer from '@renderer/components/chats/Composer'
+import ContactCard from '@renderer/components/chats/ContactCard'
 import { useAccounts } from '@renderer/store/accounts'
 import { useChats, initChatsSync } from '@renderer/store/chats'
 
@@ -13,6 +14,7 @@ export default function ChatsPage() {
   const { account } = useChats()
 
   useEffect(() => initChatsSync(), [])
+  const [showCard, setShowCard] = useState(false)
 
   const active = accounts.filter((a) => a.status === 'active')
   const current = active.find((a) => a.id === selectedId) ?? active[0] ?? null
@@ -59,20 +61,24 @@ export default function ChatsPage() {
           ) : (
             <>
               <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-950">
-                <div className="min-w-0">
+                <button type="button" onClick={() => setShowCard((v) => !v)} className="min-w-0 flex-1 text-left" title="Kontakt kartasi">
                   <div className="truncate text-sm font-semibold">{dialog.title}</div>
                   <div className="truncate text-xs text-slate-500">
                     {dialog.username ? `@${dialog.username}` : dialog.kind === 'channel' ? 'kanal' : dialog.kind === 'group' ? 'guruh' : dialog.kind === 'bot' ? 'bot' : 'shaxsiy chat'}
                   </div>
-                </div>
+                </button>
+                <button type="button" onClick={() => setShowCard((v) => !v)} title="Kontakt kartasi" className={`rounded-md p-1.5 ${showCard ? 'bg-brand-50 text-brand-600 dark:bg-brand-900/40' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+                  <Info size={16} />
+                </button>
               </div>
               <div className="min-h-0 flex-1">
                 <MessageList key={`${current.id}:${acc.selected}`} accountId={current.id} peer={acc.selected} />
               </div>
-              <Composer accountId={current.id} peer={acc.selected} />
+              <Composer key={`${current.id}:${acc.selected}`} accountId={current.id} peer={acc.selected} />
             </>
           )}
         </div>
+        {showCard && dialog && <ContactCard accountId={current.id} dialog={dialog} onClose={() => setShowCard(false)} />}
       </div>
     </div>
   )

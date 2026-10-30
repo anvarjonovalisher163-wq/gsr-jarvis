@@ -27,6 +27,8 @@ import { applyProxy } from './modules/network/proxy'
 import { createTray, destroyTray } from './modules/tray'
 import { registerChatsIpc } from './modules/chats/ipc'
 import { initChatEvents } from './modules/chats/service'
+import { registerContactsIpc } from './modules/contacts/ipc'
+import { registerStatsIpc } from './modules/stats/ipc'
 
 const log = createLogger('app')
 
@@ -123,6 +125,8 @@ function registerIpc(): void {
   registerBackupIpc()
   registerAppSettingsIpc()
   registerChatsIpc()
+  registerContactsIpc()
+  registerStatsIpc()
 }
 
 app.whenReady().then(() => {

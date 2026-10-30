@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Download, Loader2, Search } from 'lucide-react'
+import { Download, Loader2, Pencil, Search } from 'lucide-react'
+import type { BotSubscriber } from '@shared/types'
 import { formatInTz, sqliteToIso } from '@shared/time'
 import { api } from '@renderer/lib/api'
 import { describeError } from '@renderer/lib/errors'
@@ -7,7 +8,8 @@ import { useBots } from '@renderer/store/bots'
 import { usePosts } from '@renderer/store/posts'
 
 export default function SubscribersPanel({ botId }: { botId: number }) {
-  const { subscribers, tags, subQuery, setSubQuery } = useBots()
+  const { subscribers, tags, subQuery, setSubQuery, loadSubscribers } = useBots()
+  const [editId, setEditId] = useState<number | null>(null)
   const timezone = usePosts((s) => s.timezone)
   const [search, setSearch] = useState(subQuery.search ?? '')
   const [exporting, setExporting] = useState(false)
@@ -103,16 +105,21 @@ export default function SubscribersPanel({ botId }: { botId: number }) {
                     )}
                   </td>
                   <td className="px-4 py-2">
-                    <div className="flex flex-wrap gap-1">
-                      {(s.tags ?? '')
-                        .split(',')
-                        .filter(Boolean)
-                        .map((t) => (
-                          <span key={t} className="rounded bg-brand-50 px-1.5 py-0.5 text-[11px] text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
-                            {t}
-                          </span>
-                        ))}
-                    </div>
+                    {editId === s.id ? (
+                      <TagEditor sub={s} suggestions={tags} onDone={() => { setEditId(null); loadSubscribers().catch(console.error) }} />
+                    ) : (
+                      <button type="button" onClick={() => setEditId(s.id)} className="group flex flex-wrap items-center gap-1 text-left" title="Teglarni tahrirlash">
+                        {(s.tags ?? '')
+                          .split(',')
+                          .filter(Boolean)
+                          .map((t) => (
+                            <span key={t} className="rounded bg-brand-50 px-1.5 py-0.5 text-[11px] text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                              {t}
+                            </span>
+                          ))}
+                        <Pencil size={11} className="text-slate-300 group-hover:text-slate-500" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -120,6 +127,41 @@ export default function SubscribersPanel({ botId }: { botId: number }) {
           </table>
         )}
       </div>
+    </div>
+  )
+}
+
+/** Obunachi teglari: vergul bilan ajratilgan, mavjud teglar tavsiya sifatida. Enter — saqlash. */
+function TagEditor({ sub, suggestions, onDone }: { sub: BotSubscriber; suggestions: string[]; onDone: () => void }) {
+  const [value, setValue] = useState(sub.tags ?? '')
+  const save = async () => {
+    const tags = value.split(',').map((t) => t.trim()).filter(Boolean)
+    try {
+      await api.subscribers.setTags(sub.id, tags)
+    } finally {
+      onDone()
+    }
+  }
+  return (
+    <div className="flex items-center gap-1">
+      <input
+        autoFocus
+        list={`tags-${sub.id}`}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') save()
+          if (e.key === 'Escape') onDone()
+        }}
+        placeholder="promo1, vip"
+        className="w-40 rounded-md border border-brand-400 bg-white px-2 py-0.5 text-xs outline-none dark:bg-slate-950"
+      />
+      <datalist id={`tags-${sub.id}`}>
+        {suggestions.map((t) => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
     </div>
   )
 }

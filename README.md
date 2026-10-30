@@ -88,6 +88,17 @@ virtualizatsiyalangan (`react-virtuoso`) — 1000+ chatda ham tez.
 Bu yerda faqat foydalanuvchi o'zi tanlagan chatga qo'lda xabar yuboriladi — ommaviy yuborish yo'q.
 Rasm/video thumbnail'lari va avatarlar `userData/media-cache`, `avatars/` da keshlanadi.
 
+## Kontaktlar (CRM) va statistika
+
+- **Teglar**: Kontaktlar tabida yaratiladi (nom, rang). Chatda **ⓘ Kontakt** kartasi — teglar va
+  eslatma (faqat sizga ko'rinadi). Chatlar ro'yxatida filtr chiplarida teglar, qatorlarda rangli
+  nuqtalar. Bot obunachilarida teglar jadvalda qalam orqali tahrirlanadi (vergul bilan).
+- **Kontaktlar** tabi: teglangan yoki eslatmali chatlar ro'yxati, qidiruv, teg bo'yicha filtr,
+  chatga o'tish.
+- **Statistika** (Vazifalar → Statistika): kunlik yuborilgan postlar, rejali postlar, bot
+  obunachilari o'sishi (grafik), oxirgi rassilkalar natijalari, kanal postlari ko'rishlari
+  (Telegram'dan, ulangan akkaunt orqali).
+
 ## Kanallarni sinxronlash
 
 **Posting** tabi → chapda "Kanallarim" → **Yangilash**. Ilova akkaunt dialoglaridan post yozish

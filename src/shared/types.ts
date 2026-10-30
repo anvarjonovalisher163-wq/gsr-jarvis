@@ -129,6 +129,16 @@ export interface Tag {
   color: string
 }
 
+export interface Contact {
+  account_id: number
+  peer_id: string
+  title: string
+  username: string | null
+  kind: string
+  note: string
+  updated_at: string
+}
+
 export interface ContactTag {
   account_id: number
   peer_id: string

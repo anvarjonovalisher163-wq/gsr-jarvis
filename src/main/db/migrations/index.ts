@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3'
 import { migration001 } from './001_init'
 import { migration002 } from './002_broadcast_deliveries'
+import { migration003 } from './003_contacts'
 
 export interface Migration {
   version: number
@@ -9,7 +10,7 @@ export interface Migration {
 }
 
 /** Versiya tartibida. Yangi migratsiya — oxiriga qo'shiladi, mavjudlari o'zgartirilmaydi. */
-export const migrations: Migration[] = [migration001, migration002]
+export const migrations: Migration[] = [migration001, migration002, migration003]
 
 /**
  * schema_version jadvali orqali qo'llanmagan migratsiyalarni tranzaksiyada bajaradi.

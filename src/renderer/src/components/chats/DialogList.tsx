@@ -5,6 +5,9 @@ import type { DialogFilter, DialogView } from '@shared/chats'
 import { formatInTz, formatTimeInTz, utcToWallTime } from '@shared/time'
 import { useChats } from '@renderer/store/chats'
 import { usePosts } from '@renderer/store/posts'
+import { useTags } from '@renderer/store/tags'
+
+const EMPTY_MAP: Record<string, number[]> = {}
 
 const FILTERS: { id: DialogFilter; label: string }[] = [
   { id: 'all', label: 'Hammasi' },
@@ -16,11 +19,17 @@ const FILTERS: { id: DialogFilter; label: string }[] = [
 export default function DialogList({ accountId }: { accountId: number }) {
   const { account, loadDialogs, select, filter, setFilter, search, setSearch, error } = useChats()
   const acc = account(accountId)
+  const { tags, loaded: tagsLoaded, load: loadTags, maps, loadMap, filterTagId, setFilterTag } = useTags()
+  const tagMap = maps[accountId] ?? EMPTY_MAP
   const timezone = usePosts((s) => s.timezone)
 
   useEffect(() => {
     if (!acc.loaded && !acc.loading) loadDialogs(accountId).catch(console.error)
   }, [accountId, acc.loaded, acc.loading, loadDialogs])
+  useEffect(() => {
+    if (!tagsLoaded) loadTags().catch(console.error)
+    if (!maps[accountId]) loadMap(accountId).catch(console.error)
+  }, [accountId, tagsLoaded, loadTags, loadMap, maps])
 
   const list = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -29,9 +38,10 @@ export default function DialogList({ accountId }: { accountId: number }) {
       if (filter === 'groups' && d.kind !== 'group') return false
       if (filter === 'channels' && d.kind !== 'channel') return false
       if (q && !d.title.toLowerCase().includes(q) && !(d.username ?? '').toLowerCase().includes(q)) return false
+      if (filterTagId !== null && !(tagMap[d.peer] ?? []).includes(filterTagId)) return false
       return true
     })
-  }, [acc.dialogs, filter, search])
+  }, [acc.dialogs, filter, search, filterTagId, tagMap])
 
   const todayKey = utcToWallTime(new Date(), timezone).slice(0, 10)
 
@@ -52,10 +62,24 @@ export default function DialogList({ accountId }: { accountId: number }) {
             <button
               key={f.id}
               type="button"
-              onClick={() => setFilter(f.id)}
-              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${filter === f.id ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'}`}
+              onClick={() => {
+                setFilter(f.id)
+                setFilterTag(null)
+              }}
+              className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs ${filter === f.id && filterTagId === null ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'}`}
             >
               {f.label}
+            </button>
+          ))}
+          {tags.map((t) => (
+            <button
+              key={`tag-${t.id}`}
+              type="button"
+              onClick={() => setFilterTag(filterTagId === t.id ? null : t.id)}
+              className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs ${filterTagId === t.id ? 'text-white' : 'bg-white text-slate-600 dark:bg-slate-900 dark:text-slate-300'}`}
+              style={{ borderColor: t.color, background: filterTagId === t.id ? t.color : undefined }}
+            >
+              {t.name}
             </button>
           ))}
         </div>
@@ -74,7 +98,7 @@ export default function DialogList({ accountId }: { accountId: number }) {
           <Virtuoso
             data={list}
             endReached={() => loadDialogs(accountId, true)}
-            itemContent={(_, d) => <DialogRow accountId={accountId} d={d} selected={acc.selected === d.peer} todayKey={todayKey} timezone={timezone} onSelect={() => select(accountId, d.peer)} />}
+            itemContent={(_, d) => <DialogRow accountId={accountId} d={d} selected={acc.selected === d.peer} todayKey={todayKey} timezone={timezone} tagColors={(tagMap[d.peer] ?? []).map((id) => tags.find((t) => t.id === id)?.color).filter((c): c is string => !!c)} onSelect={() => select(accountId, d.peer)} />}
             components={{ Footer: () => (acc.loading ? <div className="py-2 text-center text-xs text-slate-400">Yuklanmoqda…</div> : null) }}
           />
         )}
@@ -83,7 +107,7 @@ export default function DialogList({ accountId }: { accountId: number }) {
   )
 }
 
-function DialogRow({ accountId, d, selected, todayKey, timezone, onSelect }: { accountId: number; d: DialogView; selected: boolean; todayKey: string; timezone: string; onSelect: () => void }) {
+function DialogRow({ accountId, d, selected, todayKey, timezone, tagColors, onSelect }: { accountId: number; d: DialogView; selected: boolean; todayKey: string; timezone: string; tagColors: string[]; onSelect: () => void }) {
   const { avatars, ensureAvatar } = useChats()
   const k = `${accountId}:${d.peer}`
   useEffect(() => {
@@ -102,6 +126,9 @@ function DialogRow({ accountId, d, selected, todayKey, timezone, onSelect }: { a
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1">
           <span className="truncate text-sm font-medium">{d.title}</span>
+          {tagColors.map((c, i) => (
+            <span key={i} className="h-2 w-2 shrink-0 rounded-full" style={{ background: c }} />
+          ))}
           {d.pinned && <Pin size={11} className="shrink-0 text-slate-400" />}
           <span className="ml-auto shrink-0 text-[11px] text-slate-400">{time}</span>
         </div>

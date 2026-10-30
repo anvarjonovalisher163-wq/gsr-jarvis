@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ListChecks, ScrollText } from 'lucide-react'
+import { BarChart3, ListChecks, ScrollText } from 'lucide-react'
 import TasksList from '@renderer/components/tasks/TasksList'
 import LogsPanel from '@renderer/components/tasks/LogsPanel'
+import StatsPanel from '@renderer/components/tasks/StatsPanel'
 
-type Tab = 'tasks' | 'logs'
+type Tab = 'tasks' | 'logs' | 'stats'
 
 export default function TasksPage() {
   const [tab, setTab] = useState<Tab>('tasks')
@@ -16,8 +17,11 @@ export default function TasksPage() {
         <TabBtn active={tab === 'logs'} icon={ScrollText} onClick={() => setTab('logs')}>
           Loglar
         </TabBtn>
+        <TabBtn active={tab === 'stats'} icon={BarChart3} onClick={() => setTab('stats')}>
+          Statistika
+        </TabBtn>
       </div>
-      <div className="min-h-0 flex-1">{tab === 'tasks' ? <TasksList /> : <LogsPanel />}</div>
+      <div className="min-h-0 flex-1">{tab === 'tasks' ? <TasksList /> : tab === 'logs' ? <LogsPanel /> : <StatsPanel />}</div>
     </div>
   )
 }
