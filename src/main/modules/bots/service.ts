@@ -13,6 +13,7 @@ import { allowMediaPaths } from '../posting/media'
 import { botManager } from './botManager'
 import { mapBotError } from './errors'
 import { botConfig } from './client'
+import { assertCanAddBot } from '../license/limits'
 
 const log = createLogger('bots')
 
@@ -38,6 +39,7 @@ export function emitBotsChanged(): BotView[] {
 }
 
 export async function addBot(rawToken: string): Promise<BotView> {
+  assertCanAddBot()
   const token = rawToken.trim()
   if (!TOKEN_RE.test(token)) {
     throw new AppError('BOT_TOKEN_FORMAT', "Token formati noto'g'ri. @BotFather bergan tokenni to'liq nusxalang: 123456789:AAH...")

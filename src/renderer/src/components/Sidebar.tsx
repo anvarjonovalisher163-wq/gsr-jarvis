@@ -5,6 +5,7 @@ import { useAccounts } from '@renderer/store/accounts'
 import AccountItem from '@renderer/components/AccountItem'
 import AddAccountModal from '@renderer/components/AddAccountModal'
 import { describeError } from '@renderer/lib/errors'
+import PlanBlock from '@renderer/components/license/PlanBlock'
 
 export default function Sidebar() {
   const [version, setVersion] = useState<string>('')
@@ -83,23 +84,7 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Tarif bloki (hozircha statik) */}
-      <div className="m-2 rounded-lg border border-slate-200 bg-white p-3 text-xs dark:border-slate-800 dark:bg-slate-950">
-        <div className="flex items-center justify-between">
-          <span className="font-semibold">Free Trial</span>
-          <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
-            7 kun
-          </span>
-        </div>
-        <div className="mt-2 flex items-center justify-between text-slate-500 dark:text-slate-400">
-          <span>Yuborildi</span>
-          <span className="font-medium text-slate-700 dark:text-slate-200">0/100</span>
-        </div>
-        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-          <div className="h-full w-0 bg-brand-500" />
-        </div>
-        <div className="mt-2 text-[10px] text-slate-400">{version ? `v${version}` : ''}</div>
-      </div>
+      <PlanBlock version={version} />
 
       {adding && <AddAccountModal onClose={() => setAdding(false)} />}
     </aside>

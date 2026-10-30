@@ -71,6 +71,13 @@ const api: BridgeApi = {
     delete: (id) => invoke('broadcasts:delete', { id }),
     report: (id) => invoke('broadcasts:report', { id })
   },
+  license: {
+    status: () => invoke('license:status'),
+    startTrial: (email) => invoke('license:startTrial', { email }),
+    activate: (key) => invoke('license:activate', { key }),
+    check: () => invoke('license:check'),
+    deactivate: () => invoke('license:deactivate')
+  },
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => {
     const listener = (_: Electron.IpcRendererEvent, payload: IpcEventPayload<E>) => cb(payload)
     ipcRenderer.on(event, listener)

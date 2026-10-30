@@ -17,6 +17,7 @@ import { allowMediaPaths } from '../posting/media'
 import { botManager } from './botManager'
 import { isBlockedError, mapBotError } from './errors'
 import { buildKeyboard, parseButtonsJson, parseMediaJson } from './handlers'
+import { assertCanSend } from '../license/limits'
 
 const log = createLogger('broadcast')
 
@@ -106,6 +107,14 @@ class BroadcastRunner {
     const audience = botSubscribersRepo.listActiveForBroadcast(b.bot_id, b.tag_filter)
     const done = broadcastDeliveriesRepo.processedSubscriberIds(id)
     const todo = audience.filter((s) => !done.has(s.id))
+    try {
+      assertCanSend(todo.length)
+    } catch (e) {
+      this.running.delete(id)
+      broadcastsRepo.setStatus(id, 'paused')
+      this.emitView(id)
+      throw e
+    }
     broadcastsRepo.setTotal(id, audience.length)
     broadcastsRepo.setStatus(id, 'running')
     this.emitView(id)
@@ -242,8 +251,9 @@ export async function createBroadcast(input: BroadcastInput): Promise<BroadcastV
     if (Number.isNaN(at)) throw new AppError('SCHEDULE_INVALID', "Vaqt noto'g'ri.")
     if (at - Date.now() < LIMITS.scheduleMinSec * 1000) throw new AppError('SCHEDULE_TOO_SOON', "Vaqt kamida 1 daqiqa keyin bo'lishi kerak.")
   }
-  const audience = botSubscribersRepo.countActive(input.bot_id)
+  const audience = botSubscribersRepo.listActiveForBroadcast(input.bot_id, input.tag_filter || null).length
   if (audience === 0) throw new AppError('NO_AUDIENCE', "Bu botda faol obunachi yo'q.")
+  assertCanSend(audience)
   if (!input.scheduledAt) botManager.getBot(input.bot_id) // bot o'chiq bo'lsa darhol xato
 
   const b = broadcastsRepo.create({

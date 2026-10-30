@@ -14,6 +14,8 @@ import { registerPostingIpc } from './modules/posting/ipc'
 import { registerBotsIpc } from './modules/bots/ipc'
 import { botManager } from './modules/bots/botManager'
 import { broadcastRunner } from './modules/bots/broadcast'
+import { registerLicenseIpc } from './modules/license/ipc'
+import { startPeriodicCheck } from './modules/license/service'
 
 const log = createLogger('app')
 
@@ -62,6 +64,7 @@ function registerIpc(): void {
   registerChannelsIpc()
   registerPostingIpc()
   registerBotsIpc()
+  registerLicenseIpc()
 }
 
 app.whenReady().then(() => {
@@ -101,6 +104,7 @@ app.whenReady().then(() => {
   registerProtocolHandlers()
   registerIpc()
   createWindow()
+  startPeriodicCheck()
 
   // Saqlangan akkauntlarni fonda ulaymiz; oyna kutib turmaydi
   clientManager.connectAll().catch((e) => log.error('Akkauntlarni ulashda xato', e))

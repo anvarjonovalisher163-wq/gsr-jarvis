@@ -8,6 +8,7 @@ import { clientManager } from '../accounts/clientManager'
 import { mapTelegramError } from '../accounts/errors'
 import { toInputPeer } from './peer'
 import { emitPostChanged, parseMedia, rollupStatus } from './service'
+import { assertCanSend } from '../license/limits'
 
 const log = createLogger('posting')
 
@@ -77,6 +78,7 @@ export async function sendPost(postId: number, onlyFailed = false): Promise<Post
   )
   if (all.length === 0) throw new AppError('NO_TARGETS', 'Kamida bitta kanal tanlang.')
   if (todo.length === 0) return emitPostChanged(postId)
+  assertCanSend(todo.length)
 
   const media = parseMedia(post)
   const flooded = new Map<number, number>() // accountId → seconds

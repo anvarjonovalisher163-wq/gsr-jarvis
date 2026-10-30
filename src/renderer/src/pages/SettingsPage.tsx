@@ -5,6 +5,8 @@ import { useTheme } from '@renderer/store/theme'
 import { describeError } from '@renderer/lib/errors'
 import { DEFAULT_TIMEZONE, TIMEZONES, formatInTz, isValidTimezone } from '@shared/time'
 import { usePosts } from '@renderer/store/posts'
+import { useLicense } from '@renderer/store/license'
+import { PLAN_LABEL } from '@shared/license'
 
 const KEY_API_ID = 'telegram.api_id'
 const KEY_API_HASH = 'telegram.api_hash'
@@ -21,6 +23,7 @@ export default function SettingsPage() {
     <div className="mx-auto max-w-2xl p-6">
       <h1 className="text-xl font-semibold">Sozlamalar</h1>
 
+      <LicenseSection />
       <TelegramApiSection />
       <TimezoneSection />
 
@@ -276,6 +279,99 @@ function TimezoneSection() {
         {saved && <span className="text-xs text-emerald-600">Saqlandi</span>}
       </div>
       {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+    </section>
+  )
+}
+
+function LicenseSection() {
+  const { status, openModal, check, deactivate } = useLicense()
+  const timezone = usePosts((s) => s.timezone)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  if (!status) return null
+  const run = async (fn: () => Promise<void>, ok: string) => {
+    setBusy(true)
+    setMsg(null)
+    try {
+      await fn()
+      setMsg(ok)
+    } catch (e) {
+      setMsg(describeError(e).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const stateLabel: Record<string, string> = {
+    none: "Litsenziya yo'q",
+    active: 'Faol',
+    expired: 'Muddati tugagan',
+    stale: 'Tekshirilmagan (oflayn)',
+    unconfigured: 'Server sozlanmagan (dev rejim)'
+  }
+
+  return (
+    <section className="mt-6 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <h2 className="text-sm font-semibold">Litsenziya</h2>
+      <dl className="mt-3 grid grid-cols-[140px_1fr] gap-y-1 text-sm">
+        <dt className="text-slate-500 dark:text-slate-400">Holat</dt>
+        <dd className={status.readOnly ? 'text-red-600 dark:text-red-400' : ''}>{stateLabel[status.state]}</dd>
+        <dt className="text-slate-500 dark:text-slate-400">Tarif</dt>
+        <dd>{status.plan ? PLAN_LABEL[status.plan] : '—'}</dd>
+        {status.email && (
+          <>
+            <dt className="text-slate-500 dark:text-slate-400">Email</dt>
+            <dd>{status.email}</dd>
+          </>
+        )}
+        {status.keyMasked && (
+          <>
+            <dt className="text-slate-500 dark:text-slate-400">Kalit</dt>
+            <dd className="font-mono text-xs">{status.keyMasked}</dd>
+          </>
+        )}
+        {status.expiresAt && (
+          <>
+            <dt className="text-slate-500 dark:text-slate-400">Tugaydi</dt>
+            <dd>{formatInTz(status.expiresAt, timezone)}</dd>
+          </>
+        )}
+        {status.lastCheckedAt && (
+          <>
+            <dt className="text-slate-500 dark:text-slate-400">Oxirgi tekshiruv</dt>
+            <dd>{formatInTz(status.lastCheckedAt, timezone)}</dd>
+          </>
+        )}
+        <dt className="text-slate-500 dark:text-slate-400">Limitlar</dt>
+        <dd>
+          {status.usage.accounts}/{status.limits.accounts >= 9999 ? '∞' : status.limits.accounts} akkaunt · {status.usage.bots}/
+          {status.limits.bots >= 9999 ? '∞' : status.limits.bots} bot · {status.usage.messages}/{status.limits.messages ?? '∞'} xabar
+        </dd>
+        <dt className="text-slate-500 dark:text-slate-400">Qurilma ID</dt>
+        <dd className="font-mono text-[11px] text-slate-500">{status.deviceId.slice(0, 16)}…</dd>
+      </dl>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => openModal('key')} className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600">
+          Kalit kiritish
+        </button>
+        {status.state !== 'unconfigured' && status.state !== 'none' && (
+          <>
+            <button type="button" disabled={busy} onClick={() => run(check, 'Tekshirildi.')} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800">
+              Hozir tekshirish
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => window.confirm("Litsenziyani shu qurilmadan olib tashlaysizmi? Boshqa qurilmada ishlatish uchun kalitni qayta kiritasiz.") && run(deactivate, 'Olib tashlandi.')}
+              className="text-sm text-slate-500 hover:text-red-600"
+            >
+              Qurilmadan olib tashlash
+            </button>
+          </>
+        )}
+        {msg && <span className="text-xs text-slate-500">{msg}</span>}
+      </div>
     </section>
   )
 }

@@ -141,6 +141,26 @@ bitta media, URL tugmalar, hozir yoki rejali, ixtiyoriy "Obunadan chiqish: /stop
 - Rejali rassilka ilova ochiq (bot ishlayotgan) paytda boshlanadi — bu Bot API, Telegram
   tomonida rejalashtirish yo'q.
 
+## Litsenziya
+
+Server tomoni — Supabase (`supabase/` papkasi, to'liq yo'riqnoma: `supabase/README.md`).
+Ilova `.env` dagi `MAIN_VITE_SUPABASE_URL`, `MAIN_VITE_SUPABASE_ANON_KEY`, `MAIN_VITE_LICENSE_PUBLIC_KEY`
+orqali ulanadi (`.env.example` dan nusxa oling).
+
+| Tarif  | Akkaunt | Bot | Xabar (post + rassilka) | Muddat        |
+| ------ | ------- | --- | ----------------------- | ------------- |
+| Trial  | 2       | 1   | 100 (jami)              | 7 kun         |
+| Pro    | 10      | 5   | cheksiz                 | kalit bo'yicha |
+| Agency | cheksiz | cheksiz | cheksiz             | kalit bo'yicha |
+
+- Birinchi ochilishda email → 7 kunlik trial (bitta qurilma = bitta trial).
+- Chap pastda: tarif, "Yuborildi X/Y", akkaunt/bot soni, "Tugaydi: sana".
+- Kuniga bir marta serverdan tekshiriladi; internet bo'lmasa oxirgi holat **3 kun** amal qiladi.
+- Muddat tugasa / 3 kun tekshirilmasa / bekor qilinsa — **faqat ko'rish**: yangi akkaunt, bot,
+  post yuborish, rassilka bloklanadi (main process'da tekshiriladi, UI'ni aylanib o'tib bo'lmaydi).
+- Javoblar Ed25519 bilan imzolangan; ilovada faqat ochiq kalit. Kesh `device_id` ga bog'langan.
+- `.env` bo'sh bo'lsa — dev rejim: mahalliy 7 kunlik trial limitlari, server so'rovlari yo'q.
+
 ### Linux'da keyring bo'lmasa (faqat dev/test)
 
 macOS (Keychain) va Windows (DPAPI) da shifrlash doim mavjud. Linux konteyner/CI'da keyring

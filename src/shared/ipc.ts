@@ -81,6 +81,7 @@ export interface BroadcastReport {
 }
 import type { IpcEnvelope } from './errors'
 import type { MediaFile } from './media'
+import type { LicenseStatus } from './license'
 
 /** Post nishoni (kanal) — kanal ma'lumotlari bilan. */
 export interface TargetView extends PostTarget {
@@ -203,6 +204,14 @@ export interface IpcChannels {
   /** Faqat tugagan/bekor qilingan/qoralama. */
   'broadcasts:delete': { req: { id: number }; res: void }
   'broadcasts:report': { req: { id: number }; res: BroadcastReport }
+
+  'license:status': { req: void; res: LicenseStatus }
+  /** Email bilan 7 kunlik trial (qurilma bo'yicha bir marta). */
+  'license:startTrial': { req: { email: string }; res: LicenseStatus }
+  'license:activate': { req: { key: string }; res: LicenseStatus }
+  /** Serverdan yangi holat (kuniga 1 marta avtomatik, qo'lda ham). */
+  'license:check': { req: void; res: LicenseStatus }
+  'license:deactivate': { req: void; res: LicenseStatus }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -221,6 +230,7 @@ export interface IpcEvents {
   'subscribers:changed': { botId: number }
   /** Rassilka progressi/holati o'zgardi. */
   'broadcasts:changed': BroadcastView
+  'license:changed': LicenseStatus
 }
 
 export type IpcEvent = keyof IpcEvents
@@ -290,6 +300,13 @@ export interface RendererApi {
     cancel: (id: number) => Promise<BroadcastView>
     delete: (id: number) => Promise<void>
     report: (id: number) => Promise<BroadcastReport>
+  }
+  license: {
+    status: () => Promise<LicenseStatus>
+    startTrial: (email: string) => Promise<LicenseStatus>
+    activate: (key: string) => Promise<LicenseStatus>
+    check: () => Promise<LicenseStatus>
+    deactivate: () => Promise<LicenseStatus>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }

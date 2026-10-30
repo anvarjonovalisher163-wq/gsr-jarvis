@@ -11,6 +11,7 @@ import { mapTelegramError } from './errors'
 import { downloadAvatar } from './avatars'
 import { toAccountView } from './views'
 import { TELEGRAM_TIMEOUT_MS, withTimeout } from '../../utils/timeout'
+import { assertCanAddAccount } from '../license/limits'
 
 const log = createLogger('auth')
 
@@ -49,6 +50,7 @@ export async function cancelLogin(): Promise<void> {
 }
 
 export async function sendCode(rawPhone: string): Promise<{ viaApp: boolean }> {
+  assertCanAddAccount()
   if (!isEncryptionAvailable()) {
     throw new AppError(
       'ENCRYPTION_UNAVAILABLE',

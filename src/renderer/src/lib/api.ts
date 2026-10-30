@@ -35,5 +35,6 @@ export const api: RendererApi = {
   botRules: unwrapNamespace(bridge.botRules) as RendererApi['botRules'],
   subscribers: unwrapNamespace(bridge.subscribers) as RendererApi['subscribers'],
   broadcasts: unwrapNamespace(bridge.broadcasts) as RendererApi['broadcasts'],
+  license: unwrapNamespace(bridge.license) as RendererApi['license'],
   on: bridge.on
 }
