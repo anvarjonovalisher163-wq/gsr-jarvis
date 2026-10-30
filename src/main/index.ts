@@ -11,6 +11,8 @@ import { registerChannelsIpc } from './modules/channels/ipc'
 import { clientManager } from './modules/accounts/clientManager'
 import { registerProtocolHandlers, registerSchemes } from './protocols'
 import { registerPostingIpc } from './modules/posting/ipc'
+import { registerBotsIpc } from './modules/bots/ipc'
+import { botManager } from './modules/bots/botManager'
 
 const log = createLogger('app')
 
@@ -58,6 +60,7 @@ function registerIpc(): void {
   registerAccountsIpc()
   registerChannelsIpc()
   registerPostingIpc()
+  registerBotsIpc()
 }
 
 app.whenReady().then(() => {
@@ -100,6 +103,7 @@ app.whenReady().then(() => {
 
   // Saqlangan akkauntlarni fonda ulaymiz; oyna kutib turmaydi
   clientManager.connectAll().catch((e) => log.error('Akkauntlarni ulashda xato', e))
+  botManager.startAll().catch((e) => log.error('Botlarni ishga tushirishda xato', e))
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -116,10 +120,7 @@ app.on('before-quit', (e) => {
   // Avval Telegram ulanishlarini toza yopamiz, keyin chiqamiz
   e.preventDefault()
   quitting = true
-  clientManager
-    .disconnectAll()
-    .catch(() => {})
-    .finally(() => app.quit())
+  Promise.allSettled([clientManager.disconnectAll(), botManager.stopAll()]).finally(() => app.quit())
 })
 
 app.on('will-quit', () => {

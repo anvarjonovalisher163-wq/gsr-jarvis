@@ -111,6 +111,22 @@ Rejali postni tahrirlash yoki o'chirish Telegram'dagi rejali xabarni ham bekor q
 Eslatma: inline tugmalar faqat botlar uchun (9-qadam, rassilka). Shaxsiy akkaunt postlarida
 tugma bo'lmaydi.
 
+## Botlar
+
+**Botlar** tabi → "Bot qo'shish" → @BotFather bergan token. Token `getMe` bilan tekshiriladi,
+shifrlanib saqlanadi, bot long polling rejimida ishga tushadi (ilova ochiq bo'lsa ishlaydi).
+
+- `/start [param]` — foydalanuvchi obunachilar ro'yxatiga yoziladi; deep-link parametri
+  (`t.me/bot?start=promo1`) teg sifatida saqlanadi. Qaytgan foydalanuvchi qayta faollashadi.
+- `/stop` — obunadan chiqadi (rassilka unga bormaydi). Bot bloklanganda (403) ham shunday.
+- **Qoidalar**: buyruq (`/narx`), kalit so'z (xabarda "narx" bo'lsa), boshqa hammasi.
+  Javob: matn (HTML) + ixtiyoriy media + URL tugmalar. `/start` uchun standart salomlashuv bor;
+  o'zgartirish uchun `start` buyrug'iga qoida qo'shing.
+- Faqat shaxsiy chatlar qayta ishlanadi (guruhlardagi xabarlar e'tiborsiz).
+- **Obunachilar**: qidiruv, teg filtri, CSV eksport (Excel uchun BOM bilan, `;` ajratuvchi).
+
+Xatolar: 401 — token noto'g'ri; 409 — bot boshqa joyda ham ishlayapti (ikkita polling bo'lmaydi).
+
 ### Linux'da keyring bo'lmasa (faqat dev/test)
 
 macOS (Keychain) va Windows (DPAPI) da shifrlash doim mavjud. Linux konteyner/CI'da keyring

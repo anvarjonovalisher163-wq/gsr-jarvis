@@ -11,7 +11,49 @@
  * Xatolar: main'dagi handler AppError tashlasa, renderer'da IpcError (code, message,
  * retryAfter) sifatida reject bo'ladi. Qarang: @shared/errors.
  */
-import type { Channel, ChannelType, MediaItem, Post, PostStatus, PostTarget, PublicAccount } from './types'
+import type {
+  BotRule,
+  BotRuleTrigger,
+  BotSubscriber,
+  Channel,
+  ChannelType,
+  MediaItem,
+  Post,
+  PostStatus,
+  PostTarget,
+  PublicAccount,
+  PublicBot,
+  UrlButton
+} from './types'
+
+/** Renderer ko'radigan bot: tokensiz, ishlash holati va obunachilar soni bilan. */
+export interface BotView extends PublicBot {
+  running: boolean
+  subscribers: number
+  /** Oxirgi ishga tushirish/polling xatosi (to'xtagan bo'lsa). */
+  lastError: string | null
+}
+
+export interface BotRuleInput {
+  id?: number
+  bot_id: number
+  trigger_type: BotRuleTrigger
+  /** command: "narx" (slashsiz), keyword: "narx", any: null */
+  trigger_value: string | null
+  /** Telegram HTML */
+  reply_text: string
+  reply_media: MediaItem | null
+  /** Qatorlar → tugmalar (URL). */
+  reply_buttons: UrlButton[][]
+  is_active: boolean
+}
+
+export interface SubscriberQuery {
+  botId: number
+  search?: string
+  tag?: string
+  activeOnly?: boolean
+}
 import type { IpcEnvelope } from './errors'
 import type { MediaFile } from './media'
 
@@ -107,6 +149,23 @@ export interface IpcChannels {
 
   /** Fayl tanlash dialogi (main'da). Bekor qilinsa bo'sh massiv. */
   'media:pick': { req: void; res: MediaFile[] }
+
+  'bots:list': { req: void; res: BotView[] }
+  /** Token getMe bilan tekshiriladi, shifrlanib saqlanadi va bot ishga tushadi. */
+  'bots:add': { req: { token: string }; res: BotView }
+  'bots:start': { req: { id: number }; res: BotView }
+  'bots:stop': { req: { id: number }; res: BotView }
+  'bots:remove': { req: { id: number }; res: void }
+
+  'botRules:list': { req: { botId: number }; res: BotRule[] }
+  'botRules:save': { req: BotRuleInput; res: BotRule }
+  'botRules:delete': { req: { id: number }; res: void }
+  'botRules:toggle': { req: { id: number; active: boolean }; res: BotRule }
+
+  'subscribers:list': { req: SubscriberQuery; res: BotSubscriber[] }
+  'subscribers:tags': { req: { botId: number }; res: string[] }
+  /** Saqlash dialogi ochiladi; bekor qilinsa path null. */
+  'subscribers:exportCsv': { req: { botId: number }; res: { path: string | null; count: number } }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -119,6 +178,10 @@ export interface IpcEvents {
   'accounts:changed': AccountView[]
   /** Post yoki uning nishonlari o'zgardi (yuborish jarayoni, qayta urinish). */
   'posts:changed': PostDetail
+  /** Bot ro'yxati yoki holati o'zgardi. */
+  'bots:changed': BotView[]
+  /** Botga /start yoki /stop bosildi. */
+  'subscribers:changed': { botId: number }
 }
 
 export type IpcEvent = keyof IpcEvents
@@ -160,6 +223,24 @@ export interface RendererApi {
   }
   media: {
     pick: () => Promise<MediaFile[]>
+  }
+  bots: {
+    list: () => Promise<BotView[]>
+    add: (token: string) => Promise<BotView>
+    start: (id: number) => Promise<BotView>
+    stop: (id: number) => Promise<BotView>
+    remove: (id: number) => Promise<void>
+  }
+  botRules: {
+    list: (botId: number) => Promise<BotRule[]>
+    save: (input: BotRuleInput) => Promise<BotRule>
+    delete: (id: number) => Promise<void>
+    toggle: (id: number, active: boolean) => Promise<BotRule>
+  }
+  subscribers: {
+    list: (q: SubscriberQuery) => Promise<BotSubscriber[]>
+    tags: (botId: number) => Promise<string[]>
+    exportCsv: (botId: number) => Promise<{ path: string | null; count: number }>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }
