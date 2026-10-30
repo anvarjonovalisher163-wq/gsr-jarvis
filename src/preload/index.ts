@@ -27,6 +27,10 @@ const api: BridgeApi = {
     logout: (id) => invoke('accounts:logout', { id }),
     remove: (id) => invoke('accounts:remove', { id })
   },
+  channels: {
+    sync: (accountId) => invoke('channels:sync', { accountId }),
+    list: (accountId) => invoke('channels:list', { accountId })
+  },
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => {
     const listener = (_: Electron.IpcRendererEvent, payload: IpcEventPayload<E>) => cb(payload)
     ipcRenderer.on(event, listener)

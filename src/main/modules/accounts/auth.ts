@@ -133,7 +133,7 @@ async function finalizeLogin(p: PendingLogin): Promise<AccountView> {
 
   pending = null
   clientManager.adopt(saved.id, p.client)
-  await downloadAvatar(p.client, saved.id)
+  await downloadAvatar(p.client, 'me', 'account', saved.id)
   log.info(`Akkaunt kirdi: ${saved.id} ${saved.phone} @${saved.username ?? '-'}`)
   return toAccountView(saved)
 }

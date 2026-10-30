@@ -11,13 +11,24 @@
  * Xatolar: main'dagi handler AppError tashlasa, renderer'da IpcError (code, message,
  * retryAfter) sifatida reject bo'ladi. Qarang: @shared/errors.
  */
-import type { PublicAccount } from './types'
+import type { Channel, PublicAccount } from './types'
 import type { IpcEnvelope } from './errors'
 
 /** Renderer ko'radigan akkaunt: sessiyasiz, ulanish holati va avatar bilan. */
 export interface AccountView extends PublicAccount {
   connected: boolean
   avatarUrl: string | null
+}
+
+/** Renderer ko'radigan kanal: avatar URL bilan. */
+export interface ChannelView extends Channel {
+  avatarUrl: string | null
+}
+
+export interface ChannelSyncResult {
+  channels: ChannelView[]
+  /** Sinxronlashda topilgan jami kanal/guruhlar (admin bo'lmaganlar ham). */
+  scanned: number
 }
 
 export type SignInResult =
@@ -40,6 +51,10 @@ export interface IpcChannels {
   'accounts:logout': { req: { id: number }; res: void }
   /** Akkauntni bazadan butunlay o'chiradi (kanallari, teglari bilan). */
   'accounts:remove': { req: { id: number }; res: void }
+
+  /** Akkaunt dialoglaridan post yozish huquqi bor kanal/supergruppalarni yig'adi. */
+  'channels:sync': { req: { accountId: number }; res: ChannelSyncResult }
+  'channels:list': { req: { accountId?: number }; res: ChannelView[] }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -75,6 +90,10 @@ export interface RendererApi {
     cancelLogin: () => Promise<void>
     logout: (id: number) => Promise<void>
     remove: (id: number) => Promise<void>
+  }
+  channels: {
+    sync: (accountId: number) => Promise<ChannelSyncResult>
+    list: (accountId?: number) => Promise<ChannelView[]>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }

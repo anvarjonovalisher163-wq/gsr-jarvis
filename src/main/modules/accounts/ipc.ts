@@ -50,7 +50,7 @@ export function registerAccountsIpc(): void {
       await clientManager.disconnect(id)
     }
     accountsRepo.remove(id)
-    deleteAvatar(id)
+    deleteAvatar('account', id)
     log.info(`Akkaunt o'chirildi: ${id} ${account.phone}`)
     emitAccountsChanged()
   })

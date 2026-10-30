@@ -77,6 +77,17 @@ Akkaunt ustida o'ng klik: **Chiqish** (Telegram sessiyasi yopiladi, akkaunt ro'y
 
 Qoida: FLOOD_WAIT kelsa ilova faqat kutadi va qolgan vaqtni ko'rsatadi — boshqa akkauntga o'tmaydi.
 
+## Kanallarni sinxronlash
+
+**Posting** tabi → chapda "Kanallarim" → **Yangilash**. Ilova akkaunt dialoglaridan post yozish
+huquqi bor joylarni yig'adi:
+
+- kanal: siz yaratgan yoki admin bo'lib `post_messages` huquqi bor;
+- supergruppa: siz yaratgan yoki har qanday admin huquqi bor.
+
+Oddiy a'zo bo'lgan guruhlar va eski (basic) guruhlar ro'yxatga kirmaydi. Chiqib ketilgan yoki
+admin huquqi olib tashlangan kanallar keyingi yangilashda ro'yxatdan o'chadi.
+
 ### Linux'da keyring bo'lmasa (faqat dev/test)
 
 macOS (Keychain) va Windows (DPAPI) da shifrlash doim mavjud. Linux konteyner/CI'da keyring

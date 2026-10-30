@@ -7,6 +7,7 @@ import { attachLoggerToDb, createLogger } from './logger'
 import { isEncryptionAvailable } from './security/crypto'
 import { registerSettingsIpc } from './modules/settings/ipc'
 import { registerAccountsIpc } from './modules/accounts/ipc'
+import { registerChannelsIpc } from './modules/channels/ipc'
 import { clientManager } from './modules/accounts/clientManager'
 import { registerAvatarProtocol, registerAvatarScheme } from './modules/accounts/avatars'
 
@@ -54,6 +55,7 @@ function registerIpc(): void {
   handle('app:getVersion', () => app.getVersion())
   registerSettingsIpc()
   registerAccountsIpc()
+  registerChannelsIpc()
 }
 
 app.whenReady().then(() => {

@@ -5,7 +5,7 @@ import { clientManager } from './clientManager'
 import { avatarUrl } from './avatars'
 
 export function toAccountView(a: PublicAccount): AccountView {
-  return { ...a, connected: clientManager.isConnected(a.id), avatarUrl: avatarUrl(a.id) }
+  return { ...a, connected: clientManager.isConnected(a.id), avatarUrl: avatarUrl('account', a.id) }
 }
 
 export function listAccountViews(): AccountView[] {
