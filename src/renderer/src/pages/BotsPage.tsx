@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { Bot as BotIcon, ExternalLink, ListChecks, Users } from 'lucide-react'
+import { Bot as BotIcon, ExternalLink, ListChecks, Megaphone, Users } from 'lucide-react'
 import BotList from '@renderer/components/bots/BotList'
 import RulesPanel from '@renderer/components/bots/RulesPanel'
 import SubscribersPanel from '@renderer/components/bots/SubscribersPanel'
+import BroadcastPanel from '@renderer/components/bots/BroadcastPanel'
 import Placeholder from '@renderer/components/Placeholder'
 import { useBots } from '@renderer/store/bots'
 
-type Tab = 'rules' | 'subscribers'
+type Tab = 'rules' | 'subscribers' | 'broadcast'
 
 export default function BotsPage() {
   const { bots, selectedId } = useBots()
@@ -49,10 +50,13 @@ export default function BotsPage() {
                 <TabBtn active={tab === 'subscribers'} icon={Users} onClick={() => setTab('subscribers')}>
                   Obunachilar <span className="ml-1 text-xs opacity-70">({bot.subscribers})</span>
                 </TabBtn>
+                <TabBtn active={tab === 'broadcast'} icon={Megaphone} onClick={() => setTab('broadcast')}>
+                  Rassilka
+                </TabBtn>
               </nav>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              {tab === 'rules' ? <RulesPanel botId={bot.id} /> : <SubscribersPanel botId={bot.id} />}
+              {tab === 'rules' ? <RulesPanel botId={bot.id} /> : tab === 'subscribers' ? <SubscribersPanel botId={bot.id} /> : <BroadcastPanel botId={bot.id} />}
             </div>
           </>
         )}

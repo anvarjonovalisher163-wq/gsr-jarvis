@@ -15,6 +15,8 @@ import type {
   BotRule,
   BotRuleTrigger,
   BotSubscriber,
+  Broadcast,
+  BroadcastDelivery,
   Channel,
   ChannelType,
   MediaItem,
@@ -53,6 +55,29 @@ export interface SubscriberQuery {
   search?: string
   tag?: string
   activeOnly?: boolean
+}
+
+export interface BroadcastView extends Broadcast {
+  bot_username: string
+  /** 403 — foydalanuvchi botni bloklagan (obunadan chiqarildi). */
+  blocked: number
+}
+
+export interface BroadcastInput {
+  bot_id: number
+  /** Telegram HTML */
+  text: string
+  media: MediaItem | null
+  buttons: UrlButton[][]
+  /** null — barcha faol obunachilar */
+  tag_filter: string | null
+  /** ISO (UTC). null — hozir boshlanadi. */
+  scheduledAt: string | null
+}
+
+export interface BroadcastReport {
+  broadcast: BroadcastView
+  problems: BroadcastDelivery[]
 }
 import type { IpcEnvelope } from './errors'
 import type { MediaFile } from './media'
@@ -166,6 +191,18 @@ export interface IpcChannels {
   'subscribers:tags': { req: { botId: number }; res: string[] }
   /** Saqlash dialogi ochiladi; bekor qilinsa path null. */
   'subscribers:exportCsv': { req: { botId: number }; res: { path: string | null; count: number } }
+  /** Rassilka auditoriyasi hajmi (faol, ixtiyoriy teg). */
+  'subscribers:count': { req: { botId: number; tag?: string | null }; res: number }
+
+  'broadcasts:list': { req: { botId?: number }; res: BroadcastView[] }
+  /** Yaratadi va (rejali bo'lmasa) darhol boshlaydi. */
+  'broadcasts:create': { req: BroadcastInput; res: BroadcastView }
+  'broadcasts:pause': { req: { id: number }; res: BroadcastView }
+  'broadcasts:resume': { req: { id: number }; res: BroadcastView }
+  'broadcasts:cancel': { req: { id: number }; res: BroadcastView }
+  /** Faqat tugagan/bekor qilingan/qoralama. */
+  'broadcasts:delete': { req: { id: number }; res: void }
+  'broadcasts:report': { req: { id: number }; res: BroadcastReport }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -182,6 +219,8 @@ export interface IpcEvents {
   'bots:changed': BotView[]
   /** Botga /start yoki /stop bosildi. */
   'subscribers:changed': { botId: number }
+  /** Rassilka progressi/holati o'zgardi. */
+  'broadcasts:changed': BroadcastView
 }
 
 export type IpcEvent = keyof IpcEvents
@@ -241,6 +280,16 @@ export interface RendererApi {
     list: (q: SubscriberQuery) => Promise<BotSubscriber[]>
     tags: (botId: number) => Promise<string[]>
     exportCsv: (botId: number) => Promise<{ path: string | null; count: number }>
+    count: (botId: number, tag?: string | null) => Promise<number>
+  }
+  broadcasts: {
+    list: (botId?: number) => Promise<BroadcastView[]>
+    create: (input: BroadcastInput) => Promise<BroadcastView>
+    pause: (id: number) => Promise<BroadcastView>
+    resume: (id: number) => Promise<BroadcastView>
+    cancel: (id: number) => Promise<BroadcastView>
+    delete: (id: number) => Promise<void>
+    report: (id: number) => Promise<BroadcastReport>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }

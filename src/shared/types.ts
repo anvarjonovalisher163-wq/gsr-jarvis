@@ -110,6 +110,19 @@ export interface Broadcast {
   finished_at: string | null
 }
 
+export type DeliveryStatus = 'sent' | 'failed' | 'blocked'
+
+export interface BroadcastDelivery {
+  broadcast_id: number
+  subscriber_id: number
+  status: DeliveryStatus
+  error: string | null
+  sent_at: string
+  tg_user_id: string
+  username: string | null
+  first_name: string | null
+}
+
 export interface Tag {
   id: number
   name: string

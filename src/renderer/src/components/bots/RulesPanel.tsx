@@ -8,6 +8,7 @@ import { api } from '@renderer/lib/api'
 import { describeError } from '@renderer/lib/errors'
 import { stripTags } from '@renderer/lib/telegramHtml'
 import { useBots } from '@renderer/store/bots'
+import ButtonsEditor from './ButtonsEditor'
 
 const TRIGGER_LABEL: Record<BotRuleTrigger, string> = { command: 'Buyruq', keyword: "Kalit so'z", any: 'Boshqa hammasi' }
 const TRIGGER_CLS: Record<BotRuleTrigger, string> = {
@@ -126,11 +127,6 @@ function RuleForm({ botId, rule, onClose }: { botId: number; rule: BotRule | nul
     }
   }
 
-  const setBtn = (ri: number, bi: number, patch: Partial<UrlButton>) =>
-    setButtons((rows) => rows.map((r, i) => (i === ri ? r.map((b, j) => (j === bi ? { ...b, ...patch } : b)) : r)))
-  const removeBtn = (ri: number, bi: number) =>
-    setButtons((rows) => rows.map((r, i) => (i === ri ? r.filter((_, j) => j !== bi) : r)).filter((r) => r.length))
-
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -226,38 +222,7 @@ function RuleForm({ botId, rule, onClose }: { botId: number; rule: BotRule | nul
           )}
         </div>
 
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-sm font-medium">Tugmalar (URL)</span>
-            <button type="button" onClick={() => setButtons((r) => [...r, [{ text: '', url: 'https://' }]])} className="text-xs text-brand-600 hover:underline dark:text-brand-300">
-              + Qator
-            </button>
-          </div>
-          <div className="space-y-2">
-            {buttons.map((row, ri) => (
-              <div key={ri} className="space-y-1 rounded-lg bg-slate-50 p-2 dark:bg-slate-950">
-                {row.map((b, bi) => (
-                  <div key={bi} className="flex items-center gap-1">
-                    <input value={b.text} onChange={(e) => setBtn(ri, bi, { text: e.target.value })} placeholder="Matn" className={`${inputCls} w-1/3 py-1 text-xs`} />
-                    <input value={b.url} onChange={(e) => setBtn(ri, bi, { url: e.target.value })} placeholder="https://…" className={`${inputCls} flex-1 py-1 font-mono text-xs`} />
-                    <button type="button" onClick={() => removeBtn(ri, bi)} className="p-1 text-slate-400 hover:text-red-600" aria-label="O'chirish">
-                      <X size={13} />
-                    </button>
-                  </div>
-                ))}
-                {row.length < 3 && (
-                  <button
-                    type="button"
-                    onClick={() => setButtons((rows) => rows.map((r, i) => (i === ri ? [...r, { text: '', url: 'https://' }] : r)))}
-                    className="text-[11px] text-slate-500 hover:text-brand-600"
-                  >
-                    + shu qatorga tugma
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <ButtonsEditor rows={buttons} onChange={setButtons} />
 
         <label className="inline-flex items-center gap-2 text-sm">
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="accent-brand-500" />

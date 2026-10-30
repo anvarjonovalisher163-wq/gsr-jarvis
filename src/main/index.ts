@@ -13,6 +13,7 @@ import { registerProtocolHandlers, registerSchemes } from './protocols'
 import { registerPostingIpc } from './modules/posting/ipc'
 import { registerBotsIpc } from './modules/bots/ipc'
 import { botManager } from './modules/bots/botManager'
+import { broadcastRunner } from './modules/bots/broadcast'
 
 const log = createLogger('app')
 
@@ -103,7 +104,11 @@ app.whenReady().then(() => {
 
   // Saqlangan akkauntlarni fonda ulaymiz; oyna kutib turmaydi
   clientManager.connectAll().catch((e) => log.error('Akkauntlarni ulashda xato', e))
-  botManager.startAll().catch((e) => log.error('Botlarni ishga tushirishda xato', e))
+  botManager
+    .startAll()
+    .catch((e) => log.error('Botlarni ishga tushirishda xato', e))
+    // Botlar ulangach yarim qolgan rassilkalar davom etadi, rejalilar kuzatiladi
+    .finally(() => broadcastRunner.init())
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -120,6 +125,7 @@ app.on('before-quit', (e) => {
   // Avval Telegram ulanishlarini toza yopamiz, keyin chiqamiz
   e.preventDefault()
   quitting = true
+  broadcastRunner.stop()
   Promise.allSettled([clientManager.disconnectAll(), botManager.stopAll()]).finally(() => app.quit())
 })
 

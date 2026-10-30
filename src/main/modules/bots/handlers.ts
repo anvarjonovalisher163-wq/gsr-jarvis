@@ -22,7 +22,7 @@ function normCommand(s: string | null | undefined): string {
   return (s ?? '').trim().replace(/^\//, '').split('@')[0].toLowerCase()
 }
 
-function parseMedia(json: string | null): MediaItem | null {
+export function parseMediaJson(json: string | null): MediaItem | null {
   if (!json) return null
   try {
     const v = JSON.parse(json)
@@ -32,7 +32,7 @@ function parseMedia(json: string | null): MediaItem | null {
   }
 }
 
-function parseButtons(json: string | null): UrlButton[][] {
+export function parseButtonsJson(json: string | null): UrlButton[][] {
   if (!json) return []
   try {
     const v = JSON.parse(json)
@@ -42,7 +42,8 @@ function parseButtons(json: string | null): UrlButton[][] {
   }
 }
 
-function keyboard(rows: UrlButton[][]): InlineKeyboard | undefined {
+/** URL tugma qatorlaridan inline klaviatura (bo'sh/noto'g'ri tugmalar tashlab yuboriladi). */
+export function buildKeyboard(rows: UrlButton[][]): InlineKeyboard | undefined {
   const valid = rows.map((r) => r.filter((b) => b.text && /^(https?:\/\/|tg:\/\/)/i.test(b.url))).filter((r) => r.length)
   if (!valid.length) return undefined
   const kb = new InlineKeyboard()
@@ -55,8 +56,8 @@ function keyboard(rows: UrlButton[][]): InlineKeyboard | undefined {
 
 /** Qoida javobini yuboradi: matn + ixtiyoriy media + URL tugmalar. */
 export async function sendRuleReply(ctx: Context, rule: BotRule): Promise<void> {
-  const media = parseMedia(rule.reply_media_json)
-  const reply_markup = keyboard(parseButtons(rule.reply_buttons_json))
+  const media = parseMediaJson(rule.reply_media_json)
+  const reply_markup = buildKeyboard(parseButtonsJson(rule.reply_buttons_json))
   const text = rule.reply_text
 
   const send = async (parse_mode: 'HTML' | undefined) => {

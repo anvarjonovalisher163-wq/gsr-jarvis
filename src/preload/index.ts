@@ -59,7 +59,17 @@ const api: BridgeApi = {
   subscribers: {
     list: (q) => invoke('subscribers:list', q),
     tags: (botId) => invoke('subscribers:tags', { botId }),
-    exportCsv: (botId) => invoke('subscribers:exportCsv', { botId })
+    exportCsv: (botId) => invoke('subscribers:exportCsv', { botId }),
+    count: (botId, tag) => invoke('subscribers:count', { botId, tag })
+  },
+  broadcasts: {
+    list: (botId) => invoke('broadcasts:list', { botId }),
+    create: (input) => invoke('broadcasts:create', input),
+    pause: (id) => invoke('broadcasts:pause', { id }),
+    resume: (id) => invoke('broadcasts:resume', { id }),
+    cancel: (id) => invoke('broadcasts:cancel', { id }),
+    delete: (id) => invoke('broadcasts:delete', { id }),
+    report: (id) => invoke('broadcasts:report', { id })
   },
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => {
     const listener = (_: Electron.IpcRendererEvent, payload: IpcEventPayload<E>) => cb(payload)

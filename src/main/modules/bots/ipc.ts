@@ -5,6 +5,15 @@ import { AppError } from '../../errors'
 import { botManager } from './botManager'
 import { addBot, emitBotsChanged, exportSubscribersCsv, listBotViews, listRules, removeBot, saveRule, toBotView } from './service'
 import { botsRepo } from '../../db/repositories'
+import {
+  broadcastReport,
+  cancelBroadcast,
+  createBroadcast,
+  deleteBroadcast,
+  listBroadcasts,
+  pauseBroadcast,
+  resumeBroadcast
+} from './broadcast'
 
 export function registerBotsIpc(): void {
   botManager.setOnChange(emitBotsChanged)
@@ -40,4 +49,13 @@ export function registerBotsIpc(): void {
   )
   handle('subscribers:tags', (_e, { botId }) => botSubscribersRepo.distinctTags(botId))
   handle('subscribers:exportCsv', (e, { botId }) => exportSubscribersCsv(botId, BrowserWindow.fromWebContents(e.sender)))
+  handle('subscribers:count', (_e, { botId, tag }) => botSubscribersRepo.listActiveForBroadcast(botId, tag).length)
+
+  handle('broadcasts:list', (_e, { botId }) => listBroadcasts(botId))
+  handle('broadcasts:create', (_e, input) => createBroadcast(input))
+  handle('broadcasts:pause', (_e, { id }) => pauseBroadcast(id))
+  handle('broadcasts:resume', (_e, { id }) => resumeBroadcast(id))
+  handle('broadcasts:cancel', (_e, { id }) => cancelBroadcast(id))
+  handle('broadcasts:delete', (_e, { id }) => deleteBroadcast(id))
+  handle('broadcasts:report', (_e, { id }) => broadcastReport(id))
 }

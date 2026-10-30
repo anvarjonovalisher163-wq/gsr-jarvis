@@ -6,6 +6,7 @@ import { createLogger } from '../../logger'
 import { withTimeout } from '../../utils/timeout'
 import { mapBotError } from './errors'
 import { registerHandlers } from './handlers'
+import { botConfig } from './client'
 
 const log = createLogger('bots')
 const INIT_TIMEOUT_MS = 20_000
@@ -45,7 +46,7 @@ class BotManager {
       this.emit()
       throw err
     }
-    const bot = new Bot(token)
+    const bot = new Bot(token, botConfig())
     registerHandlers(bot, botId)
 
     bot.catch((err) => {

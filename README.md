@@ -127,6 +127,20 @@ shifrlanib saqlanadi, bot long polling rejimida ishga tushadi (ilova ochiq bo'ls
 
 Xatolar: 401 — token noto'g'ri; 409 — bot boshqa joyda ham ishlayapti (ikkita polling bo'lmaydi).
 
+### Rassilka
+
+Botlar → bot → **Rassilka** → "+ Rassilka": auditoriya (barcha faol yoki teg bo'yicha), matn (HTML),
+bitta media, URL tugmalar, hozir yoki rejali, ixtiyoriy "Obunadan chiqish: /stop" qatori.
+
+- Faqat `unsubscribed_at IS NULL` obunachilarga.
+- Tezlik: har xabar orasida kamida 50 ms (≤20/s, Bot API limiti 30/s dan zaxira bilan).
+- 429 → `retry_after` + 1 s kutib qayta urinadi (3 marta); 403 (bloklagan) → obunadan chiqariladi.
+- Har yetkazish `broadcast_deliveries` jadvalida: ilova yopilib qolsa keyingi ochilishda
+  to'xtagan joyidan davom etadi, hech kimga ikki marta bormaydi.
+- Pauza / davom / bekor; hisobot: yetkazildi, xato (sababi bilan), bloklaganlar.
+- Rejali rassilka ilova ochiq (bot ishlayotgan) paytda boshlanadi — bu Bot API, Telegram
+  tomonida rejalashtirish yo'q.
+
 ### Linux'da keyring bo'lmasa (faqat dev/test)
 
 macOS (Keychain) va Windows (DPAPI) da shifrlash doim mavjud. Linux konteyner/CI'da keyring

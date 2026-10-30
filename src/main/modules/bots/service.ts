@@ -12,6 +12,7 @@ import { withTimeout } from '../../utils/timeout'
 import { allowMediaPaths } from '../posting/media'
 import { botManager } from './botManager'
 import { mapBotError } from './errors'
+import { botConfig } from './client'
 
 const log = createLogger('bots')
 
@@ -47,7 +48,7 @@ export async function addBot(rawToken: string): Promise<BotView> {
 
   let me
   try {
-    me = await withTimeout(new Bot(token).api.getMe(), 20_000, 'NETWORK', "Telegram Bot API javob bermadi.")
+    me = await withTimeout(new Bot(token, botConfig()).api.getMe(), 20_000, 'NETWORK', "Telegram Bot API javob bermadi.")
   } catch (e) {
     throw mapBotError(e)
   }

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { initAccountsSync } from '@renderer/store/accounts'
 import { initPostsSync } from '@renderer/store/posts'
 import { initBotsSync } from '@renderer/store/bots'
+import { initBroadcastsSync } from '@renderer/store/broadcasts'
 import Sidebar from '@renderer/components/Sidebar'
 import TopTabs from '@renderer/components/TopTabs'
 import ChatsPage from '@renderer/pages/ChatsPage'
@@ -16,6 +17,7 @@ export default function App() {
   useEffect(() => initAccountsSync(), [])
   useEffect(() => initPostsSync(), [])
   useEffect(() => initBotsSync(), [])
+  useEffect(() => initBroadcastsSync(), [])
 
   return (
     <div className="flex h-full">
