@@ -14,14 +14,16 @@ export default function PlanBlock({ version }: { version: string }) {
     return <div className="m-2 h-24 animate-pulse rounded-lg bg-slate-200/60 dark:bg-slate-800/60" />
   }
 
-  const planLabel = status.plan ? PLAN_LABEL[status.plan] : 'Litsenziya yo\'q'
+  const isOwner = status.state === 'owner'
+  const planLabel = isOwner ? 'Shaxsiy rejim' : status.plan ? PLAN_LABEL[status.plan] : 'Litsenziya yo\'q'
   const unlimited = status.limits.messages === null
   const pct = unlimited ? 0 : Math.min(100, Math.round((status.usage.messages / Math.max(1, status.limits.messages!)) * 100))
   const daysLeft = status.expiresAt ? Math.max(0, Math.ceil((Date.parse(status.expiresAt) - Date.now()) / 86_400_000)) : null
 
   const warn = status.readOnly || (daysLeft !== null && daysLeft <= 3) || (!unlimited && pct >= 90)
-  const badge =
-    status.state === 'expired'
+  const badge = isOwner
+    ? 'Cheksiz'
+    : status.state === 'expired'
       ? 'Tugagan'
       : status.state === 'stale'
         ? 'Tekshirilmagan'
@@ -80,9 +82,13 @@ export default function PlanBlock({ version }: { version: string }) {
       )}
 
       <div className="mt-2 flex items-center justify-between">
-        <button type="button" onClick={() => openModal('key')} className="text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-300">
-          {status.plan === 'trial' || status.state === 'none' ? 'Litsenziya kiritish' : 'Kalitni almashtirish'}
-        </button>
+        {isOwner ? (
+          <span className="text-[11px] text-slate-400">Litsenziya talab qilinmaydi</span>
+        ) : (
+          <button type="button" onClick={() => openModal('key')} className="text-[11px] font-medium text-brand-600 hover:underline dark:text-brand-300">
+            {status.plan === 'trial' || status.state === 'none' ? 'Litsenziya kiritish' : 'Kalitni almashtirish'}
+          </button>
+        )}
         <span className="text-[10px] text-slate-400">{version ? `v${version}` : ''}</span>
       </div>
     </div>

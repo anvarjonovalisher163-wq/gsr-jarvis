@@ -314,7 +314,8 @@ function LicenseSection() {
     active: 'Faol',
     expired: 'Muddati tugagan',
     stale: 'Tekshirilmagan (oflayn)',
-    unconfigured: 'Server sozlanmagan (dev rejim)'
+    unconfigured: 'Server sozlanmagan (dev rejim)',
+    owner: 'Shaxsiy rejim — cheksiz, litsenziya talab qilinmaydi'
   }
 
   return (
@@ -357,6 +358,7 @@ function LicenseSection() {
         <dt className="text-slate-500 dark:text-slate-400">Qurilma ID</dt>
         <dd className="font-mono text-[11px] text-slate-500">{status.deviceId.slice(0, 16)}…</dd>
       </dl>
+      {status.state !== 'owner' && (
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => openModal('key')} className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600">
           Kalit kiritish
@@ -378,6 +380,7 @@ function LicenseSection() {
         )}
         {msg && <span className="text-xs text-slate-500">{msg}</span>}
       </div>
+      )}
     </section>
   )
 }

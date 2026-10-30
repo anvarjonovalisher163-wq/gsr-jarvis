@@ -27,6 +27,8 @@ export type LicenseState =
   | 'stale'
   /** Server sozlanmagan (dev): mahalliy trial limitlari. */
   | 'unconfigured'
+  /** Egasi rejimi (.env MAIN_VITE_OWNER_MODE=1): serversiz, cheksiz. */
+  | 'owner'
 
 export interface LicenseLimits {
   accounts: number

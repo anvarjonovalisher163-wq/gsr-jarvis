@@ -14,7 +14,7 @@ import { AppError } from '../../errors'
 import { broadcast } from '../../events'
 import { createLogger } from '../../logger'
 import { activateWithKey, checkLicense, startTrial as apiStartTrial, type SignedLicense } from './client'
-import { licenseConfig } from './config'
+import { licenseConfig, ownerMode } from './config'
 import { deviceId } from './device'
 import { verifySignature } from './verify'
 
@@ -72,6 +72,24 @@ export function getStatus(): LicenseStatus {
   const cfg = licenseConfig()
   const dev = deviceId()
   const use = usage()
+
+  // Egasi rejimi: serversiz, cheksiz (qurilma cheklovi bo'lsa — faqat o'sha qurilmada)
+  const owner = ownerMode()
+  if (owner.enabled && (!owner.deviceId || owner.deviceId === dev)) {
+    return {
+      state: 'owner',
+      plan: 'agency',
+      email: null,
+      keyMasked: null,
+      expiresAt: null,
+      lastCheckedAt: null,
+      offlineDaysLeft: null,
+      limits: PLAN_LIMITS.agency,
+      usage: use,
+      readOnly: false,
+      deviceId: dev
+    }
+  }
 
   // Server sozlanmagan (dev): mahalliy trial
   if (!cfg) {

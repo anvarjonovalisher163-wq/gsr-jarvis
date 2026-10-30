@@ -190,6 +190,13 @@ orqali ulanadi (`.env.example` dan nusxa oling).
 - Javoblar Ed25519 bilan imzolangan; ilovada faqat ochiq kalit. Kesh `device_id` ga bog'langan.
 - `.env` bo'sh bo'lsa — dev rejim: mahalliy 7 kunlik trial limitlari, server so'rovlari yo'q.
 
+### Egasi rejimi (o'zingiz uchun, sotmasdan)
+
+`.env` da `MAIN_VITE_OWNER_MODE=1` — Supabase kerak emas, limitlar yo'q (Agency darajasi), trial/kalit
+oynasi chiqmaydi, chap pastda "Shaxsiy rejim · Cheksiz". Ixtiyoriy `MAIN_VITE_OWNER_DEVICE_ID`
+(Sozlamalar → Litsenziya → Qurilma ID) — faqat o'sha kompyuterda cheksiz, boshqa joyda oddiy
+litsenziya qoidalari. Keyinchalik sotmoqchi bo'lsangiz flagni olib tashlab Supabase'ni sozlaysiz.
+
 ## Vazifalar, loglar, tray, proksi, zaxira
 
 - **Vazifalar** tabi: rejali postlar (Telegram'da turganlar), rassilkalar (ishlayotgan/pauza/rejali),

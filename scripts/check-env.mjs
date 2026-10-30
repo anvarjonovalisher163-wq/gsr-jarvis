@@ -15,6 +15,11 @@ if (existsSync('.env')) {
   }
 }
 
+if ((env.MAIN_VITE_OWNER_MODE ?? '').trim() === '1') {
+  console.log('[check-env] OK — egasi rejimi (MAIN_VITE_OWNER_MODE=1), litsenziya serveri talab qilinmaydi')
+  process.exit(0)
+}
+
 const missing = REQUIRED.filter((k) => !env[k] || !env[k].trim())
 if (missing.length === 0) {
   console.log('[check-env] OK — litsenziya serveri sozlangan')
