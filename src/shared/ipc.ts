@@ -143,6 +143,14 @@ export interface ChannelSyncResult {
   scanned: number
 }
 
+export interface SessionImportResult {
+  index: number
+  ok: boolean
+  /** Muvaffaqiyatda: ism/username/telefon */
+  label: string | null
+  error: string | null
+}
+
 export type SignInResult =
   | { status: 'done'; account: AccountView }
   | { status: 'password'; hint: string }
@@ -163,6 +171,8 @@ export interface IpcChannels {
   'accounts:logout': { req: { id: number }; res: void }
   /** Akkauntni bazadan butunlay o'chiradi (kanallari, teglari bilan). */
   'accounts:remove': { req: { id: number }; res: void }
+  /** StringSession (GramJS/Telethon) satrlari orqali kodsiz import. Har satr uchun natija. */
+  'accounts:importSessions': { req: { sessions: string[] }; res: SessionImportResult[] }
 
   /** Akkaunt dialoglaridan post yozish huquqi bor kanal/supergruppalarni yig'adi. */
   'channels:sync': { req: { accountId: number }; res: ChannelSyncResult }
@@ -317,6 +327,7 @@ export interface RendererApi {
     cancelLogin: () => Promise<void>
     logout: (id: number) => Promise<void>
     remove: (id: number) => Promise<void>
+    importSessions: (sessions: string[]) => Promise<SessionImportResult[]>
   }
   channels: {
     sync: (accountId: number) => Promise<ChannelSyncResult>

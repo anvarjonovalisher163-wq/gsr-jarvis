@@ -67,7 +67,8 @@ const api: BridgeApi = {
     check2FA: (password) => invoke('accounts:check2FA', { password }),
     cancelLogin: () => invoke('accounts:cancelLogin'),
     logout: (id) => invoke('accounts:logout', { id }),
-    remove: (id) => invoke('accounts:remove', { id })
+    remove: (id) => invoke('accounts:remove', { id }),
+    importSessions: (sessions) => invoke('accounts:importSessions', { sessions })
   },
   channels: {
     sync: (accountId) => invoke('channels:sync', { accountId }),

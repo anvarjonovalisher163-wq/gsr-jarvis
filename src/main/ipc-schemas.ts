@@ -43,6 +43,7 @@ export const ipcSchemas = {
   'accounts:cancelLogin': z.void(),
   'accounts:logout': z.object({ id }),
   'accounts:remove': z.object({ id }),
+  'accounts:importSessions': z.object({ sessions: z.array(z.string().min(1).max(2000)).min(1).max(50) }),
 
   'channels:sync': z.object({ accountId: id }),
   'channels:list': z.object({ accountId: optionalId }),

@@ -5,7 +5,7 @@ import { accountsRepo } from '../../db/repositories'
 import { AppError } from '../../errors'
 import { createLogger } from '../../logger'
 import { clientManager } from './clientManager'
-import { cancelLogin, check2FA, sendCode, signIn } from './auth'
+import { cancelLogin, check2FA, importSessions, sendCode, signIn } from './auth'
 import { deleteAvatar } from './avatars'
 import { listAccountViews } from './views'
 
@@ -24,6 +24,7 @@ export function registerAccountsIpc(): void {
   handle('accounts:signIn', (_e, { code }) => signIn(code))
   handle('accounts:check2FA', (_e, { password }) => check2FA(password))
   handle('accounts:cancelLogin', () => cancelLogin())
+  handle('accounts:importSessions', (_e, { sessions }) => importSessions(sessions))
 
   handle('accounts:logout', async (_e, { id }) => {
     const account = accountsRepo.getById(id)

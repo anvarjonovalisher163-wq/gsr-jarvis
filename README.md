@@ -77,6 +77,10 @@ Akkaunt ustida o'ng klik: **Chiqish** (Telegram sessiyasi yopiladi, akkaunt ro'y
 
 Qoida: FLOOD_WAIT kelsa ilova faqat kutadi va qolgan vaqtni ko'rsatadi — boshqa akkauntga o'tmaydi.
 
+**Sessiya import** (Sozlamalar → Akkauntlarni import qilish): boshqa dasturdan (GramJS, Telethon)
+olingan StringSession satrlari, har qatorga bittadan — kodsiz ulanadi. Avtomatik "kodsiz login"
+boshqa yo'l bilan mumkin emas: Telegram har kirishda akkauntga kod yuboradi. `tdata` qo'llanmaydi.
+
 ## Chatlar
 
 **Chatlar** tabi: tepada akkaunt tablari (har biri alohida akkaunt), o'rtada dialoglar (qidiruv,

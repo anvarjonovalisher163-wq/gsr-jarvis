@@ -27,6 +27,7 @@ export default function SettingsPage() {
 
       <LicenseSection />
       <TelegramApiSection />
+      <SessionImportSection />
       <TimezoneSection />
       <AppSection />
       <ProxySection />
@@ -563,6 +564,63 @@ function BackupSection() {
         </button>
         {msg && <span className="truncate text-xs text-slate-500">{msg}</span>}
       </div>
+    </section>
+  )
+}
+
+function SessionImportSection() {
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [results, setResults] = useState<{ index: number; ok: boolean; label: string | null; error: string | null }[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+
+  const run = async () => {
+    setBusy(true)
+    setError(null)
+    setResults(null)
+    try {
+      setResults(await api.accounts.importSessions(lines))
+      setText('')
+    } catch (e) {
+      setError(describeError(e).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <h2 className="text-sm font-semibold">Akkauntlarni import qilish (sessiya orqali)</h2>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        Boshqa dasturdan (GramJS, Telethon va shu kabi) olingan <b>StringSession</b> satrlari — har qatorga bittadan. Kod kerak bo'lmaydi, akkaunt darhol ulanadi.
+        Telegram Desktop <code>tdata</code> papkasi qo'llanmaydi.
+      </p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={4}
+        placeholder={'1AQAOMTQ5LjE1NC4xNjcuNTEAU...\n1BAAOMTQ5LjE1NC4xNjcuOTE...'}
+        spellCheck={false}
+        className={`${inputCls} mt-3 resize-y font-mono text-xs`}
+      />
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <button type="button" disabled={busy || lines.length === 0} onClick={run} className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
+          {busy && <Loader2 size={14} className="animate-spin" />}
+          Import ({lines.length})
+        </button>
+        {busy && <span className="text-xs text-slate-500">Har akkaunt 5–30 soniya…</span>}
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
+      {results && (
+        <ul className="mt-3 space-y-1 text-xs">
+          {results.map((r) => (
+            <li key={r.index} className={r.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600 dark:text-red-400'}>
+              {r.index + 1}-qator: {r.ok ? `✓ ${r.label}` : `✗ ${r.error}`}
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   )
 }

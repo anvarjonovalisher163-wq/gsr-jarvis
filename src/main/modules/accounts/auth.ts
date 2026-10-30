@@ -1,6 +1,6 @@
 import { Api, TelegramClient } from 'telegram'
 import { computeCheck } from 'telegram/Password'
-import type { AccountView, SignInResult } from '@shared/ipc'
+import type { AccountView, SessionImportResult, SignInResult } from '@shared/ipc'
 import { accountsRepo } from '../../db/repositories'
 import { encrypt, isEncryptionAvailable } from '../../security/crypto'
 import { AppError } from '../../errors'
@@ -138,4 +138,68 @@ async function finalizeLogin(p: PendingLogin): Promise<AccountView> {
   await downloadAvatar(p.client, 'me', 'account', saved.id)
   log.info(`Akkaunt kirdi: ${saved.id} ${saved.phone} @${saved.username ?? '-'}`)
   return toAccountView(saved)
+}
+
+/**
+ * Tayyor sessiyalarni import qilish (kodsiz): GramJS StringSession yoki Telethon string session
+ * (formatlari mos). Har satr alohida: ulanish → isUserAuthorized → getMe → shifrlab saqlash.
+ * Litsenziya limiti har akkaunt uchun tekshiriladi. Boshqa dasturdan ko'chib o'tish uchun.
+ */
+export async function importSessions(sessions: string[]): Promise<SessionImportResult[]> {
+  if (!isEncryptionAvailable()) {
+    throw new AppError('ENCRYPTION_UNAVAILABLE', "Tizimda shifrlash xizmati mavjud emas — sessiyani xavfsiz saqlab bo'lmaydi.")
+  }
+  getApiCredentials()
+  const results: SessionImportResult[] = []
+
+  for (let i = 0; i < sessions.length; i++) {
+    const raw = sessions[i].trim()
+    const fail = (error: string) => results.push({ index: i, ok: false, label: null, error })
+    if (!raw) continue
+    if (!/^1[A-Za-z0-9+/=_-]{40,}$/.test(raw)) {
+      fail("Sessiya satri formati noto'g'ri (GramJS/Telethon StringSession '1' bilan boshlanadi).")
+      continue
+    }
+    try {
+      assertCanAddAccount()
+    } catch (e) {
+      fail(e instanceof AppError ? e.message : String(e))
+      continue
+    }
+
+    let client: TelegramClient | null = null
+    try {
+      client = clientManager.createClient(raw)
+      await withTimeout(client.connect(), TELEGRAM_TIMEOUT_MS)
+      if (!(await withTimeout(client.isUserAuthorized(), TELEGRAM_TIMEOUT_MS))) {
+        await client.disconnect().catch(() => {})
+        fail("Sessiya bekor qilingan yoki muddati tugagan — bu akkauntga qaytadan kirish kerak.")
+        continue
+      }
+      const me = await client.getMe()
+      if (me.className !== 'User') throw new AppError('INTERNAL', "Foydalanuvchi ma'lumotini olib bo'lmadi.")
+      const phone = me.phone ? `+${me.phone}` : `id${me.id.toString()}`
+      const existing = accountsRepo.getByPhone(phone)
+      if (existing && clientManager.isConnected(existing.id)) {
+        await client.disconnect().catch(() => {})
+        results.push({ index: i, ok: true, label: `${me.firstName ?? ''} ${me.username ? '@' + me.username : phone} — allaqachon ulangan`.trim(), error: null })
+        continue
+      }
+      const saved = accountsRepo.upsert({
+        phone,
+        username: me.username ?? null,
+        first_name: me.firstName ?? null,
+        tg_user_id: me.id.toString(),
+        session_encrypted: encrypt(client.session.save() as unknown as string)
+      })
+      clientManager.adopt(saved.id, client)
+      await downloadAvatar(client, 'me', 'account', saved.id)
+      log.info(`Sessiya import qilindi: ${saved.id} ${phone} @${me.username ?? '-'}`)
+      results.push({ index: i, ok: true, label: `${me.firstName ?? ''} ${me.username ? '@' + me.username : phone}`.trim(), error: null })
+    } catch (e) {
+      await client?.disconnect().catch(() => {})
+      fail(mapTelegramError(e).message)
+    }
+  }
+  return results
 }
