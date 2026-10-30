@@ -609,6 +609,26 @@ function SessionImportSection() {
           {busy && <Loader2 size={14} className="animate-spin" />}
           Import ({lines.length})
         </button>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true)
+            setError(null)
+            setResults(null)
+            try {
+              const r = await api.accounts.importFiles()
+              if (r.length) setResults(r)
+            } catch (e) {
+              setError(describeError(e).message)
+            } finally {
+              setBusy(false)
+            }
+          }}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+        >
+          Fayldan (.session / .zip / .json)
+        </button>
         {busy && <span className="text-xs text-slate-500">Har akkaunt 5–30 soniya…</span>}
         {error && <span className="text-xs text-red-600">{error}</span>}
       </div>
@@ -616,7 +636,7 @@ function SessionImportSection() {
         <ul className="mt-3 space-y-1 text-xs">
           {results.map((r) => (
             <li key={r.index} className={r.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600 dark:text-red-400'}>
-              {r.index + 1}-qator: {r.ok ? `✓ ${r.label}` : `✗ ${r.error}`}
+              {r.ok ? `✓ ${r.label}` : `✗ ${r.label ? r.label + ': ' : `${r.index + 1}-qator: `}${r.error}`}
             </li>
           ))}
         </ul>

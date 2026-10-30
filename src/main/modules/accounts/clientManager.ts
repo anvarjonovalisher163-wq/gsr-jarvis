@@ -95,9 +95,17 @@ class ClientManager {
     } catch (e) {
       const err = mapTelegramError(e)
       log.error(`Akkaunt ${account.id} ulanmadi: ${err.code}`, err.message)
-      if (err.code === 'AUTH_KEY_UNREGISTERED' || err.code === 'SESSION_REVOKED' || err.code === 'AUTH_KEY_DUPLICATED') {
+      if (
+        err.code === 'AUTH_KEY_UNREGISTERED' ||
+        err.code === 'SESSION_REVOKED' ||
+        err.code === 'AUTH_KEY_DUPLICATED'
+      ) {
         accountsRepo.clearSession(account.id)
-      } else if (err.code === 'USER_DEACTIVATED' || err.code === 'USER_DEACTIVATED_BAN' || err.code === 'PHONE_NUMBER_BANNED') {
+      } else if (
+        err.code === 'USER_DEACTIVATED' ||
+        err.code === 'USER_DEACTIVATED_BAN' ||
+        err.code === 'PHONE_NUMBER_BANNED'
+      ) {
         accountsRepo.setStatus(account.id, 'banned')
       }
       await client.disconnect().catch(() => {})
@@ -130,7 +138,10 @@ class ClientManager {
   getClient(accountId: number): TelegramClient {
     const client = this.clients.get(accountId)
     if (!client || !client.connected) {
-      throw new AppError('NOT_CONNECTED', 'Akkaunt Telegram\'ga ulanmagan. Qaytadan kiring yoki internetni tekshiring.')
+      throw new AppError(
+        'NOT_CONNECTED',
+        "Akkaunt Telegram'ga ulanmagan. Qaytadan kiring yoki internetni tekshiring."
+      )
     }
     return client
   }
@@ -147,7 +158,10 @@ class ClientManager {
   private async refreshProfile(accountId: number, client: TelegramClient): Promise<void> {
     const me = await client.getMe()
     if (me.className !== 'User') return
-    accountsRepo.updateProfile(accountId, { username: me.username ?? null, first_name: me.firstName ?? null })
+    accountsRepo.updateProfile(accountId, {
+      username: me.username ?? null,
+      first_name: me.firstName ?? null
+    })
   }
 
   /** Har 15 soniyada ulanish holatini tekshiradi; o'zgarsa UI'ga xabar beradi. */

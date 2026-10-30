@@ -7,9 +7,12 @@ interface Props {
   children: ReactNode
   /** Yopishni bloklash (masalan, so'rov ketayotganda). */
   closable?: boolean
+  size?: 'md' | 'lg' | 'xl'
 }
 
-export default function Modal({ title, onClose, children, closable = true }: Props) {
+const SIZE = { md: 'max-w-md', lg: 'max-w-2xl', xl: 'max-w-4xl' }
+
+export default function Modal({ title, onClose, children, closable = true, size = 'md' }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && closable) onClose()
@@ -28,7 +31,7 @@ export default function Modal({ title, onClose, children, closable = true }: Pro
       <div
         role="dialog"
         aria-modal="true"
-        className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900"
+        className={`w-full ${SIZE[size]} max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-800 dark:bg-slate-900`}
       >
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-slate-800">
           <h2 className="text-base font-semibold">{title}</h2>

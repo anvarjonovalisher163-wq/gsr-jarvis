@@ -68,7 +68,10 @@ const api: BridgeApi = {
     cancelLogin: () => invoke('accounts:cancelLogin'),
     logout: (id) => invoke('accounts:logout', { id }),
     remove: (id) => invoke('accounts:remove', { id }),
-    importSessions: (sessions) => invoke('accounts:importSessions', { sessions })
+    importSessions: (sessions) => invoke('accounts:importSessions', { sessions }),
+    importFiles: () => invoke('accounts:importFiles'),
+    exportSessions: (ids) => invoke('accounts:exportSessions', { ids }),
+    spamCheck: (id) => invoke('accounts:spamCheck', { id })
   },
   channels: {
     sync: (accountId) => invoke('channels:sync', { accountId }),

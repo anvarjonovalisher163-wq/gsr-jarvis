@@ -5,23 +5,25 @@ import { AppError, isAppError } from '../../errors'
 const MESSAGES: Record<string, string> = {
   PHONE_NUMBER_INVALID: "Telefon raqam noto'g'ri. Xalqaro formatda kiriting: +998901234567",
   PHONE_NUMBER_BANNED: 'Bu telefon raqam Telegram tomonidan bloklangan.',
-  PHONE_NUMBER_UNOCCUPIED: "Bu raqamda Telegram akkaunt yo'q. Avval Telegram ilovasida ro'yxatdan o'ting.",
+  PHONE_NUMBER_UNOCCUPIED:
+    "Bu raqamda Telegram akkaunt yo'q. Avval Telegram ilovasida ro'yxatdan o'ting.",
   PHONE_NUMBER_FLOOD: "Bu raqamga juda ko'p urinish bo'ldi. Keyinroq qayta urining.",
   PHONE_CODE_INVALID: "Kod noto'g'ri. Qaytadan tekshirib kiriting.",
-  PHONE_CODE_EXPIRED: 'Kod muddati tugadi. Kodni qaytadan so\'rang.',
+  PHONE_CODE_EXPIRED: "Kod muddati tugadi. Kodni qaytadan so'rang.",
   PHONE_CODE_EMPTY: 'Kodni kiriting.',
-  PHONE_CODE_HASH_EMPTY: 'Login sessiyasi topilmadi. Kodni qaytadan so\'rang.',
+  PHONE_CODE_HASH_EMPTY: "Login sessiyasi topilmadi. Kodni qaytadan so'rang.",
   PASSWORD_HASH_INVALID: "Ikki bosqichli parol noto'g'ri.",
   PASSWORD_EMPTY: 'Parolni kiriting.',
   PHONE_PASSWORD_FLOOD: "Parol juda ko'p marta noto'g'ri kiritildi. Keyinroq urining.",
   SESSION_PASSWORD_NEEDED: 'Ikki bosqichli tekshiruv paroli kerak.',
-  SESSION_REVOKED: "Sessiya boshqa qurilmadan bekor qilingan. Qaytadan kiring.",
-  AUTH_KEY_UNREGISTERED: "Sessiya haqiqiy emas. Akkauntga qaytadan kiring.",
-  AUTH_KEY_DUPLICATED: "Sessiya boshqa joyda ishlatilmoqda. Akkauntga qaytadan kiring.",
+  SESSION_REVOKED: 'Sessiya boshqa qurilmadan bekor qilingan. Qaytadan kiring.',
+  AUTH_KEY_UNREGISTERED: 'Sessiya haqiqiy emas. Akkauntga qaytadan kiring.',
+  AUTH_KEY_DUPLICATED: 'Sessiya boshqa joyda ishlatilmoqda. Akkauntga qaytadan kiring.',
   USER_DEACTIVATED: "Bu akkaunt o'chirilgan.",
   USER_DEACTIVATED_BAN: 'Bu akkaunt Telegram tomonidan bloklangan.',
   API_ID_INVALID: "api_id yoki api_hash noto'g'ri. Sozlamalar'ni tekshiring.",
-  API_ID_PUBLISHED_FLOOD: "Bu api_id ommaviy ishlatilgani uchun cheklangan. O'zingizning api_id'ingizni kiriting.",
+  API_ID_PUBLISHED_FLOOD:
+    "Bu api_id ommaviy ishlatilgani uchun cheklangan. O'zingizning api_id'ingizni kiriting.",
   NETWORK: "Telegram serveriga ulanib bo'lmadi. Internetni tekshiring."
 }
 

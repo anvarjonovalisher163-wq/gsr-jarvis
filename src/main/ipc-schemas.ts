@@ -44,6 +44,9 @@ export const ipcSchemas = {
   'accounts:logout': z.object({ id }),
   'accounts:remove': z.object({ id }),
   'accounts:importSessions': z.object({ sessions: z.array(z.string().min(1).max(2000)).min(1).max(50) }),
+  'accounts:importFiles': z.void(),
+  'accounts:exportSessions': z.object({ ids: z.array(id).min(1).max(200) }),
+  'accounts:spamCheck': z.object({ id }),
 
   'channels:sync': z.object({ accountId: id }),
   'channels:list': z.object({ accountId: optionalId }),

@@ -1,15 +1,17 @@
 import { api } from '@renderer/lib/api'
-import { Plus, Send } from 'lucide-react'
+import { Plus, Send, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAccounts } from '@renderer/store/accounts'
 import AccountItem from '@renderer/components/AccountItem'
 import AddAccountModal from '@renderer/components/AddAccountModal'
+import AccountsManagerModal from '@renderer/components/AccountsManagerModal'
 import { describeError } from '@renderer/lib/errors'
 import PlanBlock from '@renderer/components/license/PlanBlock'
 
 export default function Sidebar() {
   const [version, setVersion] = useState<string>('')
   const [adding, setAdding] = useState(false)
+  const [managing, setManaging] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const { accounts, loaded, selectedId, select } = useAccounts()
 
@@ -30,7 +32,8 @@ export default function Sidebar() {
 
   const logout = (id: number) => act(() => api.accounts.logout(id))
   const remove = (id: number, label: string) => {
-    if (!window.confirm(`"${label}" akkauntini o'chirasizmi? Kanallari va teglari ham o'chadi.`)) return
+    if (!window.confirm(`"${label}" akkauntini o'chirasizmi? Kanallari va teglari ham o'chadi.`))
+      return
     act(() => api.accounts.remove(id))
   }
 
@@ -47,16 +50,27 @@ export default function Sidebar() {
       {/* Akkauntlar */}
       <div className="flex items-center justify-between px-4 pb-2 pt-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          Akkauntlar {accounts.length > 0 && <span className="font-normal">({accounts.length})</span>}
+          Akkauntlar{' '}
+          {accounts.length > 0 && <span className="font-normal">({accounts.length})</span>}
         </span>
-        <button
-          type="button"
-          title="Akkaunt qo'shish"
-          onClick={() => setAdding(true)}
-          className="no-drag rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-        >
-          <Plus size={16} />
-        </button>
+        <div className="flex items-center">
+          <button
+            type="button"
+            title="Akkauntlar boshqaruvi (import, eksport, spam test)"
+            onClick={() => setManaging(true)}
+            className="no-drag rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          >
+            <SlidersHorizontal size={15} />
+          </button>
+          <button
+            type="button"
+            title="Akkaunt qo'shish"
+            onClick={() => setAdding(true)}
+            className="no-drag rounded-md p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-0.5 overflow-y-auto px-2">
@@ -87,6 +101,7 @@ export default function Sidebar() {
       <PlanBlock version={version} />
 
       {adding && <AddAccountModal onClose={() => setAdding(false)} />}
+      {managing && <AccountsManagerModal onClose={() => setManaging(false)} />}
     </aside>
   )
 }

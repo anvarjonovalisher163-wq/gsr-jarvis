@@ -22,7 +22,10 @@ export function getApiCredentials(): ApiCredentials {
     )
   }
   if (!/^[a-f0-9]{32}$/i.test(apiHash)) {
-    throw new AppError('API_HASH_INVALID', "api_hash 32 ta belgidan iborat bo'lishi kerak (my.telegram.org dan nusxalang).")
+    throw new AppError(
+      'API_HASH_INVALID',
+      "api_hash 32 ta belgidan iborat bo'lishi kerak (my.telegram.org dan nusxalang)."
+    )
   }
   return { apiId, apiHash }
 }

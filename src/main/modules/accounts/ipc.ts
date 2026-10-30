@@ -1,3 +1,4 @@
+import { BrowserWindow } from 'electron'
 import { Api } from 'telegram'
 import { handle } from '../../ipc'
 import { broadcast } from '../../events'
@@ -5,7 +6,16 @@ import { accountsRepo } from '../../db/repositories'
 import { AppError } from '../../errors'
 import { createLogger } from '../../logger'
 import { clientManager } from './clientManager'
-import { cancelLogin, check2FA, importSessions, sendCode, signIn } from './auth'
+import {
+  cancelLogin,
+  check2FA,
+  exportSessions,
+  importSessionFiles,
+  importSessions,
+  sendCode,
+  signIn
+} from './auth'
+import { spamCheck } from './spamCheck'
 import { deleteAvatar } from './avatars'
 import { listAccountViews } from './views'
 
@@ -25,6 +35,11 @@ export function registerAccountsIpc(): void {
   handle('accounts:check2FA', (_e, { password }) => check2FA(password))
   handle('accounts:cancelLogin', () => cancelLogin())
   handle('accounts:importSessions', (_e, { sessions }) => importSessions(sessions))
+  handle('accounts:importFiles', (e) => importSessionFiles(BrowserWindow.fromWebContents(e.sender)))
+  handle('accounts:exportSessions', (e, { ids }) =>
+    exportSessions(ids, BrowserWindow.fromWebContents(e.sender))
+  )
+  handle('accounts:spamCheck', (_e, { id }) => spamCheck(id))
 
   handle('accounts:logout', async (_e, { id }) => {
     const account = accountsRepo.getById(id)

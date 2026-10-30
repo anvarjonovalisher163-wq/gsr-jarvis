@@ -151,6 +151,15 @@ export interface SessionImportResult {
   error: string | null
 }
 
+export interface SpamCheckResult {
+  /** free — cheklov yo'q; limited — cheklangan (until bo'lsa muddati); unknown — javob tushunilmadi */
+  status: 'free' | 'limited' | 'unknown'
+  until: string | null
+  /** SpamBot javobi (asl matn) */
+  text: string
+  checkedAt: string
+}
+
 export type SignInResult =
   | { status: 'done'; account: AccountView }
   | { status: 'password'; hint: string }
@@ -173,6 +182,12 @@ export interface IpcChannels {
   'accounts:remove': { req: { id: number }; res: void }
   /** StringSession (GramJS/Telethon) satrlari orqali kodsiz import. Har satr uchun natija. */
   'accounts:importSessions': { req: { sessions: string[] }; res: SessionImportResult[] }
+  /** Fayl dialogi: .session (Telethon/Pyrogram), .zip, .json, .txt → import. */
+  'accounts:importFiles': { req: void; res: SessionImportResult[] }
+  /** Sessiyalarni matn fayliga eksport (saqlash dialogi). */
+  'accounts:exportSessions': { req: { ids: number[] }; res: { path: string | null; count: number } }
+  /** @SpamBot orqali akkaunt cheklov holati. */
+  'accounts:spamCheck': { req: { id: number }; res: SpamCheckResult }
 
   /** Akkaunt dialoglaridan post yozish huquqi bor kanal/supergruppalarni yig'adi. */
   'channels:sync': { req: { accountId: number }; res: ChannelSyncResult }
@@ -328,6 +343,9 @@ export interface RendererApi {
     logout: (id: number) => Promise<void>
     remove: (id: number) => Promise<void>
     importSessions: (sessions: string[]) => Promise<SessionImportResult[]>
+    importFiles: () => Promise<SessionImportResult[]>
+    exportSessions: (ids: number[]) => Promise<{ path: string | null; count: number }>
+    spamCheck: (id: number) => Promise<SpamCheckResult>
   }
   channels: {
     sync: (accountId: number) => Promise<ChannelSyncResult>
