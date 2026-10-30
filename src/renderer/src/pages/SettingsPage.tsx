@@ -7,6 +7,7 @@ import { DEFAULT_TIMEZONE, TIMEZONES, formatInTz, isValidTimezone } from '@share
 import { usePosts } from '@renderer/store/posts'
 import { useLicense } from '@renderer/store/license'
 import { PLAN_LABEL } from '@shared/license'
+import { useUpdater } from '@renderer/store/updater'
 
 const KEY_API_ID = 'telegram.api_id'
 const KEY_API_HASH = 'telegram.api_hash'
@@ -56,6 +57,7 @@ export default function SettingsPage() {
           <dt className="text-slate-500 dark:text-slate-400">Platforma</dt>
           <dd>{window.platform}</dd>
         </dl>
+        <UpdateRow />
       </section>
     </div>
   )
@@ -373,5 +375,49 @@ function LicenseSection() {
         {msg && <span className="text-xs text-slate-500">{msg}</span>}
       </div>
     </section>
+  )
+}
+
+function UpdateRow() {
+  const { status, check } = useUpdater()
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  if (!status) return null
+
+  const label: Record<string, string> = {
+    disabled: 'Dev rejim — yangilanish o\'chiq',
+    idle: 'Tekshirilmagan',
+    checking: 'Tekshirilmoqda…',
+    available: `Yangi versiya: ${status.version}`,
+    downloading: `Yuklab olinmoqda ${status.percent ?? 0}%`,
+    downloaded: `${status.version} yuklab olindi — qayta ishga tushiring`,
+    'up-to-date': 'Eng so\'nggi versiya',
+    error: `Xato: ${status.error ?? ''}`
+  }
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+      <span className="text-slate-500 dark:text-slate-400">Yangilanish:</span>
+      <span>{label[status.state]}</span>
+      <button
+        type="button"
+        disabled={busy || status.state === 'disabled' || status.state === 'downloading'}
+        onClick={async () => {
+          setBusy(true)
+          setMsg(null)
+          try {
+            await check()
+          } catch (e) {
+            setMsg(describeError(e).message)
+          } finally {
+            setBusy(false)
+          }
+        }}
+        className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800"
+      >
+        Yangilanishni tekshirish
+      </button>
+      {msg && <span className="text-xs text-red-600">{msg}</span>}
+    </div>
   )
 }

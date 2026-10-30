@@ -161,6 +161,62 @@ orqali ulanadi (`.env.example` dan nusxa oling).
 - Javoblar Ed25519 bilan imzolangan; ilovada faqat ochiq kalit. Kesh `device_id` ga bog'langan.
 - `.env` bo'sh bo'lsa — dev rejim: mahalliy 7 kunlik trial limitlari, server so'rovlari yo'q.
 
+## Build va tarqatish
+
+| Buyruq                | Natija (`release/`)                                   |
+| --------------------- | ----------------------------------------------------- |
+| `npm run build:mac`   | `TG Manager-x.y.z-mac-arm64.dmg`, `…-mac-x64.dmg` + zip |
+| `npm run build:win`   | `TG Manager-x.y.z-win-x64.exe` (NSIS installer)       |
+| `npm run build:linux` | AppImage                                              |
+| `npm run release`     | build + GitHub Release'ga yuklash (`GH_TOKEN` kerak)   |
+
+Lokal build (`scripts/pack.mjs`) faqat shu kompyuter arxitekturasi uchun, native modul
+rebuild'siz quradi (`postinstall` yuklagan tayyor `better-sqlite3` binar ishlatiladi) — Visual
+Studio/Xcode kerak emas. Mac'da Windows build qilib bo'lmaydi (va aksincha). Ikkala mac
+arxitekturasi (arm64 + x64) va GitHub Release — CI orqali (`release.yml`), u yerda electron-builder
+native modullarni o'zi rebuild qiladi.
+
+Build'dan oldin `.env` tekshiriladi (`scripts/check-env.mjs`): litsenziya serveri sozlanmagan
+bo'lsa `build:*` ogohlantiradi, `release` esa to'xtaydi.
+
+### Versiya chiqarish (GitHub Actions)
+
+```bash
+npm version patch
+```
+
+```bash
+git push --follow-tags
+```
+
+`v*` tegi `.github/workflows/release.yml` ni ishga tushiradi: macOS (arm64 + x64) va Windows
+build → GitHub Release. Kerakli secrets ro'yxati workflow faylining boshida.
+
+### Avto-yangilanish
+
+`electron-updater` GitHub Releases'dan tekshiradi (ishga tushgach 15 s, keyin har 6 soat).
+Yangi versiya bo'lsa yuqorida banner: **Yuklab olish** → **O'rnatish va qayta ishga tushirish**.
+Avtomatik yuklab olinmaydi. Sozlamalar → Ilova haqida → "Yangilanishni tekshirish".
+
+Talab: Release'lar **ochiq (public)** repoda bo'lishi kerak — electron-updater private repodan
+tokensiz yuklay olmaydi. Private bo'lsa, release'larni alohida public repoga chiqaring va
+`electron-builder.cjs` dagi `publish.owner/repo` ni o'zgartiring.
+
+### macOS: imzo va notarization
+
+Apple Developer hisobi bo'lsa CI secrets'ga `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`,
+`APPLE_TEAM_ID` va `CSC_LINK`/`CSC_KEY_PASSWORD` (Developer ID Application .p12, base64) qo'ying —
+notarization avtomatik yoqiladi.
+
+Bo'lmasa ilova imzosiz chiqadi va macOS "ochib bo'lmaydi" deydi. Foydalanuvchiga yo'riqnoma:
+**Finder → ilova ustida o'ng klik → Ochish → Ochish**. Yoki terminalda:
+
+```bash
+xattr -cr "/Applications/TG Manager.app"
+```
+
+Windows'da imzosiz installer SmartScreen ogohlantiradi: **Qo'shimcha → Baribir ishga tushirish**.
+
 ### Linux'da keyring bo'lmasa (faqat dev/test)
 
 macOS (Keychain) va Windows (DPAPI) da shifrlash doim mavjud. Linux konteyner/CI'da keyring

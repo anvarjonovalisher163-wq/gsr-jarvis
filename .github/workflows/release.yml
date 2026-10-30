@@ -1,0 +1,78 @@
+# Tag push qilinganda (v1.2.3) macOS va Windows build qilib GitHub Release'ga yuklaydi.
+#
+# Kerakli secrets (Settings → Secrets and variables → Actions):
+#   SUPABASE_URL, SUPABASE_ANON_KEY, LICENSE_PUBLIC_KEY   — majburiy (.env uchun)
+#   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID   — ixtiyoriy (notarization)
+#   CSC_LINK, CSC_KEY_PASSWORD                             — ixtiyoriy (macOS .p12 sertifikat, base64)
+#   WIN_CSC_LINK, WIN_CSC_KEY_PASSWORD                     — ixtiyoriy (Windows code signing)
+# GITHUB_TOKEN avtomatik — Release yaratish uchun yetarli.
+#
+# Chiqarish:  npm version patch  →  git push --follow-tags
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            # Ikkala arch bitta chaqiruvda — latest-mac.yml ikkalasini o'z ichiga oladi
+            args: --mac --arm64 --x64
+          - os: windows-latest
+            args: --win --x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: .env (litsenziya serveri)
+        shell: bash
+        run: |
+          cat > .env <<EOF
+          MAIN_VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+          MAIN_VITE_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          MAIN_VITE_LICENSE_PUBLIC_KEY=${{ secrets.LICENSE_PUBLIC_KEY }}
+          EOF
+          node scripts/check-env.mjs
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+      - name: electron-builder
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          # Sertifikat bo'lmasa imzosiz build (xato emas)
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
+        run: npx electron-builder ${{ matrix.args }} --publish always
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tg-manager-${{ matrix.os }}
+          path: |
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.yml
+            release/*.blockmap
+          if-no-files-found: ignore

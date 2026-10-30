@@ -16,6 +16,8 @@ import { botManager } from './modules/bots/botManager'
 import { broadcastRunner } from './modules/bots/broadcast'
 import { registerLicenseIpc } from './modules/license/ipc'
 import { startPeriodicCheck } from './modules/license/service'
+import { registerUpdaterIpc } from './modules/updater/ipc'
+import { initUpdater } from './modules/updater'
 
 const log = createLogger('app')
 
@@ -65,6 +67,7 @@ function registerIpc(): void {
   registerPostingIpc()
   registerBotsIpc()
   registerLicenseIpc()
+  registerUpdaterIpc()
 }
 
 app.whenReady().then(() => {
@@ -105,6 +108,7 @@ app.whenReady().then(() => {
   registerIpc()
   createWindow()
   startPeriodicCheck()
+  initUpdater()
 
   // Saqlangan akkauntlarni fonda ulaymiz; oyna kutib turmaydi
   clientManager.connectAll().catch((e) => log.error('Akkauntlarni ulashda xato', e))

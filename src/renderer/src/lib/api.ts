@@ -36,5 +36,6 @@ export const api: RendererApi = {
   subscribers: unwrapNamespace(bridge.subscribers) as RendererApi['subscribers'],
   broadcasts: unwrapNamespace(bridge.broadcasts) as RendererApi['broadcasts'],
   license: unwrapNamespace(bridge.license) as RendererApi['license'],
+  updater: unwrapNamespace(bridge.updater) as RendererApi['updater'],
   on: bridge.on
 }

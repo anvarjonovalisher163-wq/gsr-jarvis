@@ -78,6 +78,12 @@ const api: BridgeApi = {
     check: () => invoke('license:check'),
     deactivate: () => invoke('license:deactivate')
   },
+  updater: {
+    status: () => invoke('updater:status'),
+    check: () => invoke('updater:check'),
+    download: () => invoke('updater:download'),
+    install: () => invoke('updater:install')
+  },
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => {
     const listener = (_: Electron.IpcRendererEvent, payload: IpcEventPayload<E>) => cb(payload)
     ipcRenderer.on(event, listener)

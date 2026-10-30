@@ -82,6 +82,7 @@ export interface BroadcastReport {
 import type { IpcEnvelope } from './errors'
 import type { MediaFile } from './media'
 import type { LicenseStatus } from './license'
+import type { UpdaterStatus } from './updater'
 
 /** Post nishoni (kanal) — kanal ma'lumotlari bilan. */
 export interface TargetView extends PostTarget {
@@ -212,6 +213,13 @@ export interface IpcChannels {
   /** Serverdan yangi holat (kuniga 1 marta avtomatik, qo'lda ham). */
   'license:check': { req: void; res: LicenseStatus }
   'license:deactivate': { req: void; res: LicenseStatus }
+
+  'updater:status': { req: void; res: UpdaterStatus }
+  'updater:check': { req: void; res: UpdaterStatus }
+  /** Foydalanuvchi tasdiqlagach yuklab olish boshlanadi. */
+  'updater:download': { req: void; res: UpdaterStatus }
+  /** Yuklab olingan yangilanishni o'rnatib qayta ishga tushiradi. */
+  'updater:install': { req: void; res: void }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -231,6 +239,7 @@ export interface IpcEvents {
   /** Rassilka progressi/holati o'zgardi. */
   'broadcasts:changed': BroadcastView
   'license:changed': LicenseStatus
+  'updater:changed': UpdaterStatus
 }
 
 export type IpcEvent = keyof IpcEvents
@@ -307,6 +316,12 @@ export interface RendererApi {
     activate: (key: string) => Promise<LicenseStatus>
     check: () => Promise<LicenseStatus>
     deactivate: () => Promise<LicenseStatus>
+  }
+  updater: {
+    status: () => Promise<UpdaterStatus>
+    check: () => Promise<UpdaterStatus>
+    download: () => Promise<UpdaterStatus>
+    install: () => Promise<void>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }
