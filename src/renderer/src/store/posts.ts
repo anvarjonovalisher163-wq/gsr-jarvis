@@ -3,7 +3,7 @@ import type { PostDetail, PostFilter, PostInput } from '@shared/ipc'
 import { DEFAULT_TIMEZONE } from '@shared/time'
 import { api } from '@renderer/lib/api'
 
-export type PostingView = 'editor' | 'list'
+export type PostingView = 'editor' | 'list' | 'calendar'
 
 interface PostsState {
   posts: PostDetail[]
@@ -13,11 +13,14 @@ interface PostsState {
   /** Tahrirlanayotgan post; null — yangi post. */
   editing: PostDetail | null
   timezone: string
+  /** Kalendarda bo'sh kunga bosilganda: yangi post uchun oldindan tanlangan vaqt (ISO). */
+  presetSchedule: string | null
 
   load: () => Promise<void>
   setFilter: (f: PostFilter) => void
   setView: (v: PostingView) => void
-  openNew: () => void
+  openNew: (presetSchedule?: string | null) => void
+  reschedule: (id: number, scheduledAt: string) => Promise<PostDetail>
   openEdit: (d: PostDetail) => void
   upsert: (d: PostDetail) => void
 
@@ -36,6 +39,7 @@ export const usePosts = create<PostsState>((set, get) => ({
   view: 'editor',
   editing: null,
   timezone: DEFAULT_TIMEZONE,
+  presetSchedule: null,
 
   load: async () => {
     const posts = await api.posts.list(get().filter)
@@ -48,7 +52,7 @@ export const usePosts = create<PostsState>((set, get) => ({
   },
 
   setView: (view) => set({ view }),
-  openNew: () => set({ editing: null, view: 'editor' }),
+  openNew: (presetSchedule = null) => set({ editing: null, view: 'editor', presetSchedule }),
   openEdit: (d) => set({ editing: d, view: 'editor' }),
 
   upsert: (d) =>
@@ -79,6 +83,11 @@ export const usePosts = create<PostsState>((set, get) => ({
       posts: s.posts.filter((p) => p.post.id !== id),
       editing: s.editing?.post.id === id ? null : s.editing
     }))
+  },
+  reschedule: async (id, scheduledAt) => {
+    const d = await api.posts.reschedule(id, scheduledAt)
+    get().upsert(d)
+    return d
   },
   duplicate: async (id) => {
     const d = await api.posts.duplicate(id)

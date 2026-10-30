@@ -54,7 +54,8 @@ const api: BridgeApi = {
     send: (id) => invoke('posts:send', { id }),
     retry: (id) => invoke('posts:retry', { id }),
     delete: (id) => invoke('posts:delete', { id }),
-    duplicate: (id) => invoke('posts:duplicate', { id })
+    duplicate: (id) => invoke('posts:duplicate', { id }),
+    reschedule: (id, scheduledAt) => invoke('posts:reschedule', { id, scheduledAt })
   },
   media: {
     pick: () => invoke('media:pick')

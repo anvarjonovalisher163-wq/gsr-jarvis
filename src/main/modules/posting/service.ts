@@ -187,3 +187,37 @@ export function duplicatePost(id: number): PostDetail {
   )
   return getDetail(copy.id)
 }
+
+/**
+ * Kalendardan sudrab vaqtni o'zgartirish. Telegram'da turgan rejali xabarlar o'chiriladi,
+ * nishonlar yangi vaqt bilan pending bo'ladi; avval Telegram'da bo'lgan bo'lsa darhol qayta
+ * rejalanadi (sendPost), aks holda (qoralama) faqat vaqt yangilanadi.
+ */
+export async function reschedulePost(id: number, scheduledAt: string): Promise<PostDetail> {
+  const post = postsRepo.getById(id)
+  if (!post) throw new AppError('NOT_FOUND', 'Post topilmadi.')
+  if (post.status === 'sent') throw new AppError('POST_ALREADY_SENT', "Yuborilgan postning vaqtini o'zgartirib bo'lmaydi.")
+  const at = Date.parse(scheduledAt)
+  if (Number.isNaN(at)) throw new AppError('SCHEDULE_INVALID', "Vaqt noto'g'ri.")
+  const diff = (at - Date.now()) / 1000
+  if (diff < LIMITS.scheduleMinSec) throw new AppError('SCHEDULE_TOO_SOON', "Vaqt kamida 1 daqiqa keyin bo'lishi kerak.")
+  if (diff > LIMITS.scheduleMaxSec) throw new AppError('SCHEDULE_TOO_FAR', "Ko'pi bilan 365 kun oldindan.")
+
+  const targets = postTargetsRepo.listByPost(id)
+  const wasOnTelegram = targets.some((t) => t.status === 'scheduled' && t.tg_message_id)
+  await cancelScheduledOnTelegram(id)
+  getDb()
+    .prepare(
+      `UPDATE post_targets SET scheduled_at = ?, status = 'pending', tg_message_id = NULL, error = NULL
+       WHERE post_id = ? AND status != 'sent'`
+    )
+    .run(new Date(at).toISOString(), id)
+  rollupStatus(id)
+  log.info(`Post ${id} vaqti o'zgartirildi → ${new Date(at).toISOString()}${wasOnTelegram ? ' (Telegram\'da qayta rejalanadi)' : ''}`)
+
+  if (wasOnTelegram) {
+    const { sendPost } = await import('./send')
+    return sendPost(id)
+  }
+  return emitPostChanged(id)
+}

@@ -176,6 +176,8 @@ export interface IpcChannels {
   /** Telegram'dagi rejali xabarlarni ham bekor qiladi. */
   'posts:delete': { req: { id: number }; res: void }
   'posts:duplicate': { req: { id: number }; res: PostDetail }
+  /** Vaqtni o'zgartiradi: Telegram'dagi rejali xabar o'chirilib yangi vaqt bilan qayta rejalanadi. */
+  'posts:reschedule': { req: { id: number; scheduledAt: string }; res: PostDetail }
 
   /** Fayl tanlash dialogi (main'da). Bekor qilinsa bo'sh massiv. */
   'media:pick': { req: void; res: MediaFile[] }
@@ -294,6 +296,7 @@ export interface RendererApi {
     retry: (id: number) => Promise<PostDetail>
     delete: (id: number) => Promise<void>
     duplicate: (id: number) => Promise<PostDetail>
+    reschedule: (id: number, scheduledAt: string) => Promise<PostDetail>
   }
   media: {
     pick: () => Promise<MediaFile[]>

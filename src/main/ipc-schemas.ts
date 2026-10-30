@@ -66,6 +66,7 @@ export const ipcSchemas = {
   'posts:retry': z.object({ id }),
   'posts:delete': z.object({ id }),
   'posts:duplicate': z.object({ id }),
+  'posts:reschedule': z.object({ id, scheduledAt: isoDate }),
 
   'media:pick': z.void(),
 

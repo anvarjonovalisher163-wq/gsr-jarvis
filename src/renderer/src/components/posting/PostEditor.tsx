@@ -42,6 +42,7 @@ function wallFromNow(minutes: number, tz: string): string {
 
 export default function PostEditor({ editing, onDone }: Props) {
   const timezone = usePosts((s) => s.timezone)
+  const presetSchedule = usePosts((s) => s.presetSchedule)
   const { save, send, openEdit } = usePosts()
   const { channels, selectedIds, setSelected, toggle } = useChannels()
 
@@ -70,12 +71,13 @@ export default function PostEditor({ editing, onDone }: Props) {
       setTitle('')
       setText('')
       setMedia([])
-      setMode('now')
-      setWall(wallFromNow(60, timezone))
+      // Kalendardan kelgan bo'lsa — tanlangan sana bilan rejali
+      setMode(presetSchedule ? 'schedule' : 'now')
+      setWall(presetSchedule ? utcToWallTime(presetSchedule, timezone) : wallFromNow(60, timezone))
     }
     setError(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editing?.post.id, timezone])
+  }, [editing?.post.id, timezone, presetSchedule])
 
   const selectedChannels = useMemo(
     () => channels.filter((c) => selectedIds.includes(c.id)),

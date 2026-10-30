@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { List, PenSquare } from 'lucide-react'
+import { CalendarDays, List, PenSquare } from 'lucide-react'
 import ChannelList from '@renderer/components/ChannelList'
 import PostEditor from '@renderer/components/posting/PostEditor'
 import PostList from '@renderer/components/posting/PostList'
+import Calendar from '@renderer/components/posting/Calendar'
 import { usePosts } from '@renderer/store/posts'
 
 export default function PostingPage() {
@@ -26,8 +27,11 @@ export default function PostingPage() {
           <ViewTab active={view === 'list'} icon={List} onClick={() => setView('list')}>
             Postlar{posts.length > 0 && <span className="ml-1 text-xs opacity-70">({posts.length})</span>}
           </ViewTab>
+          <ViewTab active={view === 'calendar'} icon={CalendarDays} onClick={() => setView('calendar')}>
+            Kalendar
+          </ViewTab>
           {editing && (
-            <button type="button" onClick={openNew} className="ml-auto text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+            <button type="button" onClick={() => openNew()} className="ml-auto text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
               + Yangi post
             </button>
           )}
@@ -36,8 +40,10 @@ export default function PostingPage() {
         <div className="min-h-0 flex-1">
           {view === 'editor' ? (
             <PostEditor editing={editing} onDone={() => setView('list')} />
-          ) : (
+          ) : view === 'list' ? (
             <PostList onEdit={openEdit} />
+          ) : (
+            <Calendar onEdit={openEdit} onNew={(iso) => openNew(iso)} />
           )}
         </div>
       </div>

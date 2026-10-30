@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { handle } from '../../ipc'
 import { pickMedia } from './media'
-import { deletePost, duplicatePost, getDetail, listPosts, savePost } from './service'
+import { deletePost, duplicatePost, getDetail, listPosts, reschedulePost, savePost } from './service'
 import { sendPost } from './send'
 
 export function registerPostingIpc(): void {
@@ -12,6 +12,7 @@ export function registerPostingIpc(): void {
   handle('posts:retry', (_e, { id }) => sendPost(id, true))
   handle('posts:delete', (_e, { id }) => deletePost(id))
   handle('posts:duplicate', (_e, { id }) => duplicatePost(id))
+  handle('posts:reschedule', (_e, { id, scheduledAt }) => reschedulePost(id, scheduledAt))
 
   handle('media:pick', (e) => pickMedia(BrowserWindow.fromWebContents(e.sender)))
 }

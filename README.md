@@ -111,6 +111,13 @@ Rejali postni tahrirlash yoki o'chirish Telegram'dagi rejali xabarni ham bekor q
 Eslatma: inline tugmalar faqat botlar uchun (9-qadam, rassilka). Shaxsiy akkaunt postlarida
 tugma bo'lmaydi.
 
+### Kontent kalendar
+
+Posting → **Kalendar**: oy va hafta ko'rinishi, har kunda rejali postlar (kanal avatarlari, vaqt,
+holat rangi). Postni **sudrab** boshqa kun/soatga tashlang — Telegram'dagi rejali xabar o'chirilib
+yangi vaqt bilan qayta rejalanadi (yuborilgan postlar sudralmaydi). Bo'sh kunga **ikki marta
+bosing** (yoki «+») — o'sha sana bilan yangi post muharriri ochiladi.
+
 ## Botlar
 
 **Botlar** tabi → "Bot qo'shish" → @BotFather bergan token. Token `getMe` bilan tekshiriladi,
