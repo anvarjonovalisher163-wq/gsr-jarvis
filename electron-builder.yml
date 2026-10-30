@@ -15,4 +15,4 @@ mac:
 win:
   target:
     - nsis
-npmRebuild: true
+npmRebuild: false

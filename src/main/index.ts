@@ -1,12 +1,19 @@
-import { app, shell, dialog, BrowserWindow } from 'electron'
+import { app, shell, dialog, safeStorage, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { handle } from './ipc'
 import { openDatabase, closeDatabase, dbPath } from './db'
 import { attachLoggerToDb, createLogger } from './logger'
 import { isEncryptionAvailable } from './security/crypto'
+import { registerSettingsIpc } from './modules/settings/ipc'
+import { registerAccountsIpc } from './modules/accounts/ipc'
+import { clientManager } from './modules/accounts/clientManager'
+import { registerAvatarProtocol, registerAvatarScheme } from './modules/accounts/avatars'
 
 const log = createLogger('app')
+
+// Privileged sxemalar app ready'dan oldin ro'yxatga olinishi shart
+registerAvatarScheme()
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -45,6 +52,8 @@ function createWindow(): void {
 
 function registerIpc(): void {
   handle('app:getVersion', () => app.getVersion())
+  registerSettingsIpc()
+  registerAccountsIpc()
 }
 
 app.whenReady().then(() => {
@@ -69,12 +78,24 @@ app.whenReady().then(() => {
     return
   }
 
-  if (!isEncryptionAvailable()) {
-    log.warn('safeStorage shifrlash mavjud emas — akkaunt qo\'shishda xato beriladi')
+  // Faqat Linux dev/test uchun: keyring bo'lmagan muhitda (CI, konteyner) oddiy shifrlashga ruxsat.
+  // macOS/Windows'da Keychain/DPAPI doim bor, bu tarmoq hech qachon ishlamaydi.
+  if (process.platform === 'linux' && process.env.TGM_ALLOW_PLAINTEXT_STORAGE === '1') {
+    safeStorage.setUsePlainTextEncryption(true)
+    log.warn('TGM_ALLOW_PLAINTEXT_STORAGE=1: sessiyalar kuchsiz shifrlanadi (faqat dev/test!)')
   }
 
+  if (!isEncryptionAvailable()) {
+    const backend = process.platform === 'linux' ? safeStorage.getSelectedStorageBackend() : 'n/a'
+    log.warn(`safeStorage shifrlash mavjud emas (backend: ${backend}) — akkaunt qo'shishda xato beriladi`)
+  }
+
+  registerAvatarProtocol()
   registerIpc()
   createWindow()
+
+  // Saqlangan akkauntlarni fonda ulaymiz; oyna kutib turmaydi
+  clientManager.connectAll().catch((e) => log.error('Akkauntlarni ulashda xato', e))
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -83,6 +104,18 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+let quitting = false
+app.on('before-quit', (e) => {
+  if (quitting) return
+  // Avval Telegram ulanishlarini toza yopamiz, keyin chiqamiz
+  e.preventDefault()
+  quitting = true
+  clientManager
+    .disconnectAll()
+    .catch(() => {})
+    .finally(() => app.quit())
 })
 
 app.on('will-quit', () => {

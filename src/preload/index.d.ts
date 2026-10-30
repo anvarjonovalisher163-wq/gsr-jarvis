@@ -1,8 +1,9 @@
-import type { RendererApi } from '@shared/ipc'
+import type { BridgeApi } from '@shared/ipc'
 
 declare global {
   interface Window {
-    api: RendererApi
+    /** Xom bridge. Renderer kodida to'g'ridan-to'g'ri ishlatmang — @renderer/lib/api dan foydalaning. */
+    api: BridgeApi
     platform: NodeJS.Platform
   }
 }

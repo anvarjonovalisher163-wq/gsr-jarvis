@@ -61,6 +61,29 @@ SQLite fayl `app.getPath('userData')` ichida: `tg-manager.db` (WAL rejimi).
 Migratsiyalar `src/main/db/migrations/` da, `schema_version` jadvali orqali boshqariladi.
 Sessiya va tokenlar `safeStorage` bilan shifrlanadi (`src/main/security/crypto.ts`).
 
+## Telegram akkaunt qo'shish
+
+1. https://my.telegram.org → **API development tools** → `api_id` va `api_hash` oling.
+2. Ilovada **Sozlamalar → Telegram API** bo'limiga kiriting va saqlang.
+3. Chap paneldagi **+** → telefon raqam → kod → (bo'lsa) ikki bosqichli parol.
+
+Sessiya shifrlanib `accounts` jadvaliga yoziladi; keyingi ochilishda qayta login so'ralmaydi.
+Akkaunt ustida o'ng klik: **Chiqish** (Telegram sessiyasi yopiladi, akkaunt ro'yxatda qoladi) yoki
+**O'chirish** (kanallari va teglari bilan butunlay o'chadi).
+
+Qoida: FLOOD_WAIT kelsa ilova faqat kutadi va qolgan vaqtni ko'rsatadi — boshqa akkauntga o'tmaydi.
+
+### Linux'da keyring bo'lmasa (faqat dev/test)
+
+macOS (Keychain) va Windows (DPAPI) da shifrlash doim mavjud. Linux konteyner/CI'da keyring
+bo'lmasa akkaunt qo'shish `ENCRYPTION_UNAVAILABLE` xatosi bilan to'xtaydi. Faqat test uchun:
+
+```bash
+TGM_ALLOW_PLAINTEXT_STORAGE=1 npm run dev
+```
+
+Bu rejimda sessiyalar kuchsiz shifrlanadi — haqiqiy akkauntlar uchun ishlatmang.
+
 ## Loyiha tuzilishi
 
 ```

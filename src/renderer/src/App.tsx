@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { initAccountsSync } from '@renderer/store/accounts'
 import Sidebar from '@renderer/components/Sidebar'
 import TopTabs from '@renderer/components/TopTabs'
 import ChatsPage from '@renderer/pages/ChatsPage'
@@ -9,6 +11,8 @@ import TasksPage from '@renderer/pages/TasksPage'
 import SettingsPage from '@renderer/pages/SettingsPage'
 
 export default function App() {
+  useEffect(() => initAccountsSync(), [])
+
   return (
     <div className="flex h-full">
       <Sidebar />
