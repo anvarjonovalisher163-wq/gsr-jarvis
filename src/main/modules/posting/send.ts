@@ -9,6 +9,7 @@ import { mapTelegramError } from '../accounts/errors'
 import { toInputPeer } from './peer'
 import { emitPostChanged, parseMedia, rollupStatus } from './service'
 import { assertCanSend } from '../license/limits'
+import { taskRegistry } from '../tasks'
 
 const log = createLogger('posting')
 
@@ -83,17 +84,20 @@ export async function sendPost(postId: number, onlyFailed = false): Promise<Post
   const media = parseMedia(post)
   const flooded = new Map<number, number>() // accountId → seconds
   inFlight.add(postId)
+  taskRegistry.start('post_sending', postId, post.title || post.text.replace(/<[^>]+>/g, '').slice(0, 60) || `Post #${postId}`)
   log.info(`Post ${postId}: ${todo.length} ta kanalga yuborish boshlandi${onlyFailed ? ' (qayta urinish)' : ''}`)
 
   try {
     for (let i = 0; i < todo.length; i++) {
       const t = todo[i]
       await sendToTarget(t, post.text, media, flooded)
+      taskRegistry.progress('post_sending', postId, i + 1, todo.length)
       emitPostChanged(postId)
       if (i < todo.length - 1) await sleep(PAUSE_MIN_MS + Math.random() * PAUSE_JITTER_MS)
     }
   } finally {
     inFlight.delete(postId)
+    taskRegistry.finish('post_sending', postId)
   }
 
   const status = rollupStatus(postId)

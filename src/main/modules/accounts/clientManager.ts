@@ -10,6 +10,7 @@ import { createLogger } from '../../logger'
 import { getApiCredentials } from './credentials'
 import { mapTelegramError } from './errors'
 import { TELEGRAM_TIMEOUT_MS, withTimeout } from '../../utils/timeout'
+import { gramjsProxy } from '../network/proxy'
 
 const log = createLogger('accounts')
 
@@ -41,7 +42,8 @@ class ClientManager {
       appVersion: app.getVersion(),
       systemVersion: `${process.platform} ${process.arch}`,
       langCode: 'uz',
-      baseLogger: new Logger(LogLevel.ERROR)
+      baseLogger: new Logger(LogLevel.ERROR),
+      proxy: gramjsProxy()
     })
   }
 

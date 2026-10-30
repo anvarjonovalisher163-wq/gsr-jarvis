@@ -8,6 +8,7 @@ import { usePosts } from '@renderer/store/posts'
 import { useLicense } from '@renderer/store/license'
 import { PLAN_LABEL } from '@shared/license'
 import { useUpdater } from '@renderer/store/updater'
+import { NO_PROXY, type AppSettings, type ProxyConfig } from '@shared/network'
 
 const KEY_API_ID = 'telegram.api_id'
 const KEY_API_HASH = 'telegram.api_hash'
@@ -27,6 +28,9 @@ export default function SettingsPage() {
       <LicenseSection />
       <TelegramApiSection />
       <TimezoneSection />
+      <AppSection />
+      <ProxySection />
+      <BackupSection />
 
       <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
         <h2 className="text-sm font-semibold">Ko'rinish</h2>
@@ -419,5 +423,143 @@ function UpdateRow() {
       </button>
       {msg && <span className="text-xs text-red-600">{msg}</span>}
     </div>
+  )
+}
+
+function useAppSettings() {
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  useEffect(() => {
+    api.app.getSettings().then(setSettings).catch(console.error)
+  }, [])
+  const update = async (patch: Partial<AppSettings>) => setSettings(await api.app.setSettings(patch))
+  return { settings, update }
+}
+
+function AppSection() {
+  const { settings, update } = useAppSettings()
+  const [error, setError] = useState<string | null>(null)
+  if (!settings) return null
+  const toggle = (patch: Partial<AppSettings>) => update(patch).catch((e) => setError(describeError(e).message))
+
+  return (
+    <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <h2 className="text-sm font-semibold">Ilova</h2>
+      <div className="mt-3 space-y-2 text-sm">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={settings.closeToTray} onChange={(e) => toggle({ closeToTray: e.target.checked })} className="accent-brand-500" />
+          Oynani yopganda tray'da qolsin
+          <span className="text-xs text-slate-500">— rejali rassilkalar va botlar fonda ishlaydi</span>
+        </label>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={settings.autoStart} onChange={(e) => toggle({ autoStart: e.target.checked })} className="accent-brand-500" />
+          Tizim bilan birga ishga tushsin
+          {window.platform === 'linux' && <span className="text-xs text-slate-500">(Linux'da hozircha yo'q)</span>}
+        </label>
+        <div className="flex items-center gap-2">
+          <span>Til</span>
+          <select value={settings.language} onChange={(e) => toggle({ language: e.target.value as AppSettings['language'] })} className="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-950">
+            <option value="uz">O'zbek</option>
+            <option value="ru" disabled>
+              Русский (tez orada)
+            </option>
+            <option value="en" disabled>
+              English (tez orada)
+            </option>
+          </select>
+        </div>
+      </div>
+      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+    </section>
+  )
+}
+
+function ProxySection() {
+  const { settings, update } = useAppSettings()
+  const [form, setForm] = useState<ProxyConfig | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  useEffect(() => {
+    if (settings) setForm(settings.proxy)
+  }, [settings])
+  if (!form) return null
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setMsg(null)
+    try {
+      await update({ proxy: form.type === 'none' ? NO_PROXY : form })
+      setMsg(form.type === 'none' ? 'Proksi o\'chirildi.' : 'Saqlandi — Telegram ulanishlari yangi proksi bilan qayta qurilmoqda.')
+    } catch (err) {
+      setMsg(describeError(err).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <h2 className="text-sm font-semibold">Proksi</h2>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        Telegram cheklangan tarmoqlar uchun. SOCKS5 — akkauntlar, botlar va litsenziya uchun; HTTP — faqat botlar va litsenziya (MTProto HTTP proksi orqali ishlamaydi).
+      </p>
+      <form onSubmit={save} className="mt-3 grid grid-cols-[110px_1fr_90px] gap-2 text-sm">
+        <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ProxyConfig['type'] })} className={inputCls}>
+          <option value="none">Yo'q</option>
+          <option value="socks5">SOCKS5</option>
+          <option value="http">HTTP</option>
+        </select>
+        <input value={form.host} disabled={form.type === 'none'} onChange={(e) => setForm({ ...form, host: e.target.value.trim() })} placeholder="host yoki IP" className={inputCls} />
+        <input type="number" value={form.port} disabled={form.type === 'none'} onChange={(e) => setForm({ ...form, port: Number(e.target.value) })} min={1} max={65535} className={inputCls} />
+        <span className="self-center text-xs text-slate-500">Login (ixtiyoriy)</span>
+        <input value={form.username} disabled={form.type === 'none'} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="username" className={inputCls} autoComplete="off" />
+        <input type="password" value={form.password} disabled={form.type === 'none'} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="parol" className={inputCls} autoComplete="off" />
+        <div className="col-span-3 flex items-center gap-3">
+          <button type="submit" disabled={busy || (form.type !== 'none' && !form.host)} className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50">
+            Saqlash
+          </button>
+          {msg && <span className="text-xs text-slate-500">{msg}</span>}
+        </div>
+      </form>
+    </section>
+  )
+}
+
+function BackupSection() {
+  const [busy, setBusy] = useState<'export' | 'import' | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  const run = async (kind: 'export' | 'import') => {
+    setBusy(kind)
+    setMsg(null)
+    try {
+      if (kind === 'export') {
+        const r = await api.backup.export()
+        setMsg(r.path ? `Saqlandi: ${r.path}` : null)
+      } else {
+        const r = await api.backup.import()
+        setMsg(r.restarted ? 'Tiklanmoqda, ilova qayta ishga tushadi…' : null)
+      }
+    } catch (e) {
+      setMsg(describeError(e).message)
+    } finally {
+      setBusy(null)
+    }
+  }
+  return (
+    <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <h2 className="text-sm font-semibold">Zaxira nusxa</h2>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        Baza (akkauntlar, botlar, postlar, obunachilar) va avatarlar .zip faylga. Sessiya va tokenlar shifrlangan — faqat shu kompyuterda tiklanadi.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button type="button" disabled={!!busy} onClick={() => run('export')} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800">
+          Eksport (.zip)
+        </button>
+        <button type="button" disabled={!!busy} onClick={() => run('import')} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:hover:bg-slate-800">
+          Import…
+        </button>
+        {msg && <span className="truncate text-xs text-slate-500">{msg}</span>}
+      </div>
+    </section>
   )
 }

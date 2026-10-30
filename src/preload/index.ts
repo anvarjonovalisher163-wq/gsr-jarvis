@@ -12,7 +12,23 @@ function invoke<C extends IpcChannel>(channel: C, req?: IpcReq<C>): Promise<IpcE
 
 const api: BridgeApi = {
   app: {
-    getVersion: () => invoke('app:getVersion')
+    getVersion: () => invoke('app:getVersion'),
+    getSettings: () => invoke('app:getSettings'),
+    setSettings: (patch) => invoke('app:setSettings', patch)
+  },
+  tasks: {
+    list: () => invoke('tasks:list'),
+    stop: (key) => invoke('tasks:stop', { key })
+  },
+  logs: {
+    list: (q) => invoke('logs:list', q ?? {}),
+    modules: () => invoke('logs:modules'),
+    export: (q) => invoke('logs:export', q ?? {}),
+    clear: () => invoke('logs:clear')
+  },
+  backup: {
+    export: () => invoke('backup:export'),
+    import: () => invoke('backup:import')
   },
   settings: {
     get: (keys) => invoke('settings:get', { keys }),

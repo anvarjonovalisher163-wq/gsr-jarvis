@@ -52,6 +52,9 @@ module.exports = {
   // Lokal build (scripts/pack.mjs) -c.npmRebuild=false beradi: postinstall yuklagan host-arch binar ishlatiladi.
   npmRebuild: true,
 
+  // Tray ikonkasi uchun (process.resourcesPath/icon.png)
+  extraResources: [{ from: 'resources/icon.png', to: 'icon.png' }],
+
   publish: {
     provider: 'github',
     owner: 'anvarjonovalisher163-wq',

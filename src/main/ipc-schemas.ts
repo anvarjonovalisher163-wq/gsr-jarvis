@@ -22,6 +22,12 @@ const urlButton = z.object({ text: shortText(64), url: shortText(2048) })
 const buttonRows = z.array(z.array(urlButton).max(8)).max(20)
 
 const postStatus = z.enum(['draft', 'scheduled', 'sent', 'failed'])
+const logQuery = z.object({
+  level: z.enum(['debug', 'info', 'warn', 'error']).optional(),
+  module: shortText(64).optional(),
+  search: shortText(200).optional(),
+  limit: z.number().int().min(1).max(5000).optional()
+})
 
 export const ipcSchemas = {
   'app:getVersion': z.void(),
@@ -117,7 +123,34 @@ export const ipcSchemas = {
   'updater:status': z.void(),
   'updater:check': z.void(),
   'updater:download': z.void(),
-  'updater:install': z.void()
+  'updater:install': z.void(),
+
+  'tasks:list': z.void(),
+  'tasks:stop': z.object({ key: shortText(64) }),
+
+  'logs:list': logQuery,
+  'logs:modules': z.void(),
+  'logs:export': logQuery,
+  'logs:clear': z.void(),
+
+  'backup:export': z.void(),
+  'backup:import': z.void(),
+
+  'app:getSettings': z.void(),
+  'app:setSettings': z.object({
+    autoStart: z.boolean().optional(),
+    closeToTray: z.boolean().optional(),
+    language: z.enum(['uz', 'ru', 'en']).optional(),
+    proxy: z
+      .object({
+        type: z.enum(['none', 'socks5', 'http']),
+        host: shortText(253),
+        port: z.number().int().min(1).max(65535),
+        username: shortText(200),
+        password: shortText(200)
+      })
+      .optional()
+  })
 } satisfies { [C in IpcChannel]: z.ZodType<IpcReq<C>, z.ZodTypeDef, unknown> }
 
 export type IpcSchemas = typeof ipcSchemas

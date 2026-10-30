@@ -161,6 +161,21 @@ orqali ulanadi (`.env.example` dan nusxa oling).
 - Javoblar Ed25519 bilan imzolangan; ilovada faqat ochiq kalit. Kesh `device_id` ga bog'langan.
 - `.env` bo'sh bo'lsa — dev rejim: mahalliy 7 kunlik trial limitlari, server so'rovlari yo'q.
 
+## Vazifalar, loglar, tray, proksi, zaxira
+
+- **Vazifalar** tabi: rejali postlar (Telegram'da turganlar), rassilkalar (ishlayotgan/pauza/rejali),
+  sinxronlash va post yuborish jarayonlari — progress va to'xtatish tugmasi bilan. Rejali postni
+  to'xtatish Telegram'dagi xabarni o'chiradi, post qoralamaga qaytadi.
+- **Loglar**: daraja/modul filtri, qidiruv, nusxa olish, `.txt` eksport, tozalash. 30 kundan eski
+  yozuvlar avtomatik o'chadi.
+- **Tray**: oyna yopilganda ilova tray'da qoladi (Sozlamalar → Ilova; default yoqilgan) — rejali
+  rassilkalar va botlar ishlashda davom etadi. Tray menyusi: Ochish, Botlarni to'xtatish, Chiqish.
+- **Avto-start**: tizim bilan birga (macOS/Windows), yashirin holda (`--hidden`).
+- **Proksi** (bitta umumiy): SOCKS5 — akkauntlar (GramJS), botlar va litsenziya; HTTP — faqat
+  botlar va litsenziya (MTProto HTTP orqali ishlamaydi). O'zgartirilganda ulanishlar qayta quriladi.
+- **Zaxira nusxa**: `.zip` (baza + avatarlar) eksport/import; import ilovani qayta ishga tushiradi.
+  Sessiya/tokenlar shifrlangan — boshqa kompyuterda ochilmaydi (qayta login kerak).
+
 ## Build va tarqatish
 
 | Buyruq                | Natija (`release/`)                                   |

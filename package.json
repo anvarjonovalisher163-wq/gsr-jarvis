@@ -24,6 +24,7 @@
     "release": "npm run check-env && npm run build && electron-builder --publish always"
   },
   "dependencies": {
+    "adm-zip": "^0.5.18",
     "better-sqlite3": "^12.11.1",
     "big-integer": "^1.6.52",
     "electron-updater": "^6.8.11",
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^3.0.0",
+    "@types/adm-zip": "^0.5.8",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",

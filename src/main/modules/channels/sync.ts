@@ -8,6 +8,7 @@ import { clientManager } from '../accounts/clientManager'
 import { mapTelegramError } from '../accounts/errors'
 import { avatarUrl, deleteAvatar, downloadAvatar } from '../accounts/avatars'
 import { withTimeout } from '../../utils/timeout'
+import { taskRegistry } from '../tasks'
 
 const log = createLogger('channels')
 
@@ -46,6 +47,7 @@ export async function syncChannels(accountId: number): Promise<ChannelSyncResult
   const account = accountsRepo.getById(accountId)
   if (!account) throw new AppError('NOT_FOUND', 'Akkaunt topilmadi.')
   const client = clientManager.getClient(accountId)
+  taskRegistry.start('channel_sync', accountId, `${account.first_name || account.phone}: kanallar`)
 
   let dialogs
   try {
@@ -56,6 +58,7 @@ export async function syncChannels(accountId: number): Promise<ChannelSyncResult
       "Dialoglar ro'yxatini olib bo'lmadi: Telegram javob bermadi."
     )
   } catch (e) {
+    taskRegistry.finish('channel_sync', accountId)
     throw mapTelegramError(e)
   }
 
@@ -97,6 +100,7 @@ export async function syncChannels(accountId: number): Promise<ChannelSyncResult
     if (!keep.includes(tgId)) deleteAvatar('channel', old.id)
   }
   const removed = channelsRepo.removeMissing(accountId, keep)
+  taskRegistry.finish('channel_sync', accountId)
 
   log.info(
     `Akkaunt ${accountId}: ${scanned} ta kanal/guruh ko'rildi, ${saved.length} tasida post huquqi bor, ${removed} ta o'chirildi`

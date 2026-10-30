@@ -19,6 +19,12 @@ import { registerLicenseIpc } from './modules/license/ipc'
 import { startPeriodicCheck } from './modules/license/service'
 import { registerUpdaterIpc } from './modules/updater/ipc'
 import { initUpdater } from './modules/updater'
+import { registerTasksIpc } from './modules/tasks/ipc'
+import { registerLogsIpc } from './modules/logs/ipc'
+import { registerBackupIpc } from './modules/backup/ipc'
+import { applyAutoStart, getAppSettings, registerAppSettingsIpc } from './modules/appSettings/ipc'
+import { applyProxy } from './modules/network/proxy'
+import { createTray, destroyTray } from './modules/tray'
 
 const log = createLogger('app')
 
@@ -29,8 +35,22 @@ registerSchemes()
 process.on('unhandledRejection', (reason) => log.error('Ushlanmagan promise xatosi', reason))
 process.on('uncaughtException', (err) => log.error('Ushlanmagan istisno', err))
 
+let mainWindow: BrowserWindow | null = null
+let quitting = false
+
+/** Tray/dock'dan: oyna bo'lsa ko'rsatadi, yo'q bo'lsa yangisini yaratadi. */
+function openWindow(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow()
+    return
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 1000,
@@ -49,17 +69,31 @@ function createWindow(): void {
     }
   })
 
-  mainWindow.on('ready-to-show', () => mainWindow.show())
+  const win = mainWindow
+  win.on('ready-to-show', () => {
+    if (!process.argv.includes('--hidden')) win.show()
+  })
+
+  // Tray'ga yopish: rejali postlar/rassilkalar va botlar fonda ishlashda davom etadi
+  win.on('close', (e) => {
+    if (quitting || !getAppSettings().closeToTray) return
+    e.preventDefault()
+    win.hide()
+    log.info("Oyna tray'ga yashirildi (fon ishlar davom etadi)")
+  })
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null
+  })
 
   // Tashqi havolalar tizim brauzerida ochiladi — faqat xavfsiz sxemalar
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^(https?:|mailto:|tg:)/i.test(url)) shell.openExternal(url).catch((e) => log.warn('openExternal', e))
     else log.warn(`Ruxsat etilmagan havola bloklandi: ${url.slice(0, 80)}`)
     return { action: 'deny' }
   })
 
   // Renderer ichida boshqa sahifaga o'tish (drag-drop fayl, havola) bloklanadi
-  mainWindow.webContents.on('will-navigate', (e, url) => {
+  win.webContents.on('will-navigate', (e, url) => {
     const devUrl = process.env['ELECTRON_RENDERER_URL']
     if (devUrl && url.startsWith(devUrl)) return
     e.preventDefault()
@@ -67,9 +101,9 @@ function createWindow(): void {
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
@@ -82,6 +116,10 @@ function registerIpc(): void {
   registerBotsIpc()
   registerLicenseIpc()
   registerUpdaterIpc()
+  registerTasksIpc()
+  registerLogsIpc()
+  registerBackupIpc()
+  registerAppSettingsIpc()
 }
 
 app.whenReady().then(() => {
@@ -122,7 +160,11 @@ app.whenReady().then(() => {
 
   registerProtocolHandlers()
   registerIpc()
+  // Proksi Telegram ulanishlaridan OLDIN qo'llanadi
+  applyProxy().catch((e) => log.warn('Proksi qo\'llanmadi', e))
+  applyAutoStart()
   createWindow()
+  createTray(openWindow, () => app.quit())
   startPeriodicCheck()
   initUpdater()
 
@@ -134,23 +176,29 @@ app.whenReady().then(() => {
     // Botlar ulangach yarim qolgan rassilkalar davom etadi, rejalilar kuzatiladi
     .finally(() => broadcastRunner.init())
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+  app.on('activate', () => openWindow())
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+  // Tray'ga yopish yoqilgan bo'lsa ilova fonda qoladi (tray → Ochish yangi oyna yaratadi)
+  if (process.platform === 'darwin') return
+  if (getAppSettings().closeToTray) {
+    log.info("Oyna yopildi — ilova tray'da ishlashda davom etadi")
+    return
+  }
+  app.quit()
 })
 
-let quitting = false
 app.on('before-quit', (e) => {
+  // Ikkinchi marta (tozalashdan keyingi app.exit) — hech narsa qilmaymiz
   if (quitting) return
-  // Avval Telegram ulanishlarini toza yopamiz, keyin chiqamiz
+  log.info('before-quit: tozalash boshlandi')
   e.preventDefault()
   quitting = true
   broadcastRunner.stop()
-  Promise.allSettled([clientManager.disconnectAll(), botManager.stopAll()]).finally(() => app.quit())
+  destroyTray()
+  // Avval Telegram ulanishlari va botlar toza yopiladi, keyin chiqamiz
+  Promise.allSettled([clientManager.disconnectAll(), botManager.stopAll()]).finally(() => app.exit(0))
 })
 
 app.on('will-quit', () => {

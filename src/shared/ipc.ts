@@ -83,6 +83,9 @@ import type { IpcEnvelope } from './errors'
 import type { MediaFile } from './media'
 import type { LicenseStatus } from './license'
 import type { UpdaterStatus } from './updater'
+import type { LogQuery, TaskView } from './tasks'
+import type { AppSettings } from './network'
+import type { LogEntry } from './types'
 
 /** Post nishoni (kanal) — kanal ma'lumotlari bilan. */
 export interface TargetView extends PostTarget {
@@ -220,6 +223,22 @@ export interface IpcChannels {
   'updater:download': { req: void; res: UpdaterStatus }
   /** Yuklab olingan yangilanishni o'rnatib qayta ishga tushiradi. */
   'updater:install': { req: void; res: void }
+
+  'tasks:list': { req: void; res: TaskView[] }
+  /** Rassilkani bekor qiladi yoki rejali postni Telegram'dan olib tashlaydi (draft'ga qaytadi). */
+  'tasks:stop': { req: { key: string }; res: void }
+
+  'logs:list': { req: LogQuery; res: LogEntry[] }
+  'logs:modules': { req: void; res: string[] }
+  'logs:export': { req: LogQuery; res: { path: string | null; count: number } }
+  'logs:clear': { req: void; res: void }
+
+  'backup:export': { req: void; res: { path: string | null } }
+  /** Zip tanlanadi, baza almashtiriladi va ilova qayta ishga tushadi. */
+  'backup:import': { req: void; res: { restarted: boolean } }
+
+  'app:getSettings': { req: void; res: AppSettings }
+  'app:setSettings': { req: Partial<AppSettings>; res: AppSettings }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -250,9 +269,6 @@ export type IpcEventPayload<E extends IpcEvent> = IpcEvents[E]
  * window.api shu interfeysga mos bo'ladi.
  */
 export interface RendererApi {
-  app: {
-    getVersion: () => Promise<string>
-  }
   settings: {
     get: (keys: string[]) => Promise<Record<string, string>>
     set: (values: Record<string, string>) => Promise<void>
@@ -322,6 +338,25 @@ export interface RendererApi {
     check: () => Promise<UpdaterStatus>
     download: () => Promise<UpdaterStatus>
     install: () => Promise<void>
+  }
+  tasks: {
+    list: () => Promise<TaskView[]>
+    stop: (key: string) => Promise<void>
+  }
+  logs: {
+    list: (q?: LogQuery) => Promise<LogEntry[]>
+    modules: () => Promise<string[]>
+    export: (q?: LogQuery) => Promise<{ path: string | null; count: number }>
+    clear: () => Promise<void>
+  }
+  backup: {
+    export: () => Promise<{ path: string | null }>
+    import: () => Promise<{ restarted: boolean }>
+  }
+  app: {
+    getVersion: () => Promise<string>
+    getSettings: () => Promise<AppSettings>
+    setSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }

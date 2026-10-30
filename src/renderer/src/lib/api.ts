@@ -37,5 +37,8 @@ export const api: RendererApi = {
   broadcasts: unwrapNamespace(bridge.broadcasts) as RendererApi['broadcasts'],
   license: unwrapNamespace(bridge.license) as RendererApi['license'],
   updater: unwrapNamespace(bridge.updater) as RendererApi['updater'],
+  tasks: unwrapNamespace(bridge.tasks) as RendererApi['tasks'],
+  logs: unwrapNamespace(bridge.logs) as RendererApi['logs'],
+  backup: unwrapNamespace(bridge.backup) as RendererApi['backup'],
   on: bridge.on
 }

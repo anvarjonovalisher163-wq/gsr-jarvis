@@ -4,6 +4,7 @@ import { AppError } from '../../errors'
 import { withTimeout } from '../../utils/timeout'
 import type { LicenseConfig } from './config'
 import { isLicensePayload, verifySignature } from './verify'
+import { proxiedFetch } from '../network/proxy'
 
 const TIMEOUT_MS = 15_000
 
@@ -25,7 +26,7 @@ async function call(cfg: LicenseConfig, fn: 'activate' | 'check', body: Record<s
   let res: Response
   try {
     res = await withTimeout(
-      fetch(`${cfg.url}/functions/v1/${fn}`, {
+      proxiedFetch(`${cfg.url}/functions/v1/${fn}`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

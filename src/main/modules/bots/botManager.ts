@@ -19,9 +19,23 @@ class BotManager {
   private bots = new Map<number, Bot>()
   private errors = new Map<number, string>()
   private onChange: (() => void) | null = null
+  private onChangeExtra: (() => void) | null = null
 
   setOnChange(cb: () => void): void {
     this.onChange = cb
+  }
+
+  /** Qo'shimcha kuzatuvchi (tray menyusi). */
+  setOnChangeExtra(cb: () => void): void {
+    this.onChangeExtra = cb
+  }
+
+  runningCount(): number {
+    return [...this.bots.values()].filter((b) => b.isRunning()).length
+  }
+
+  runningIds(): number[] {
+    return [...this.bots.entries()].filter(([, b]) => b.isRunning()).map(([id]) => id)
   }
 
   async startAll(): Promise<void> {
@@ -120,6 +134,7 @@ class BotManager {
 
   private emit(): void {
     this.onChange?.()
+    this.onChangeExtra?.()
   }
 }
 
