@@ -29,5 +29,7 @@ export const api: RendererApi = {
   settings: unwrapNamespace(bridge.settings) as RendererApi['settings'],
   accounts: unwrapNamespace(bridge.accounts) as RendererApi['accounts'],
   channels: unwrapNamespace(bridge.channels) as RendererApi['channels'],
+  posts: unwrapNamespace(bridge.posts) as RendererApi['posts'],
+  media: unwrapNamespace(bridge.media) as RendererApi['media'],
   on: bridge.on
 }

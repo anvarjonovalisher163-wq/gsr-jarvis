@@ -31,6 +31,18 @@ const api: BridgeApi = {
     sync: (accountId) => invoke('channels:sync', { accountId }),
     list: (accountId) => invoke('channels:list', { accountId })
   },
+  posts: {
+    list: (filter) => invoke('posts:list', filter ?? {}),
+    get: (id) => invoke('posts:get', { id }),
+    save: (input) => invoke('posts:save', input),
+    send: (id) => invoke('posts:send', { id }),
+    retry: (id) => invoke('posts:retry', { id }),
+    delete: (id) => invoke('posts:delete', { id }),
+    duplicate: (id) => invoke('posts:duplicate', { id })
+  },
+  media: {
+    pick: () => invoke('media:pick')
+  },
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => {
     const listener = (_: Electron.IpcRendererEvent, payload: IpcEventPayload<E>) => cb(payload)
     ipcRenderer.on(event, listener)

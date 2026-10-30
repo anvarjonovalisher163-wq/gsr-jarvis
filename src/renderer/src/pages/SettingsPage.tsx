@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { Check, ExternalLink, Loader2 } from 'lucide-react'
 import { useTheme } from '@renderer/store/theme'
 import { describeError } from '@renderer/lib/errors'
+import { DEFAULT_TIMEZONE, TIMEZONES, formatInTz, isValidTimezone } from '@shared/time'
+import { usePosts } from '@renderer/store/posts'
 
 const KEY_API_ID = 'telegram.api_id'
 const KEY_API_HASH = 'telegram.api_hash'
@@ -20,6 +22,7 @@ export default function SettingsPage() {
       <h1 className="text-xl font-semibold">Sozlamalar</h1>
 
       <TelegramApiSection />
+      <TimezoneSection />
 
       <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
         <h2 className="text-sm font-semibold">Ko'rinish</h2>
@@ -202,3 +205,77 @@ function TelegramApiSection() {
 
 const inputCls =
   'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950'
+
+function TimezoneSection() {
+  const [tz, setTz] = useState(DEFAULT_TIMEZONE)
+  const [custom, setCustom] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [now, setNow] = useState(() => new Date())
+  const loadTimezone = usePosts((s) => s.loadTimezone)
+
+  useEffect(() => {
+    api.settings.get(['app.timezone']).then((v) => {
+      const value = v['app.timezone'] || DEFAULT_TIMEZONE
+      setTz(value)
+      setCustom(!TIMEZONES.some((t) => t.id === value))
+    })
+    const t = setInterval(() => setNow(new Date()), 10_000)
+    return () => clearInterval(t)
+  }, [])
+
+  const save = async (value: string) => {
+    setError(null)
+    if (!isValidTimezone(value)) {
+      setError("Bunday vaqt zonasi topilmadi (masalan: Asia/Tashkent).")
+      return
+    }
+    try {
+      await api.settings.set({ 'app.timezone': value })
+      setTz(value)
+      await loadTimezone()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } catch (e) {
+      setError(describeError(e).message)
+    }
+  }
+
+  return (
+    <section className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <h2 className="text-sm font-semibold">Vaqt zonasi</h2>
+      <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+        Rejali postlar vaqti shu zonada kiritiladi. Hozir: {isValidTimezone(tz) ? formatInTz(now, tz) : '—'}
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {!custom ? (
+          <select
+            value={tz}
+            onChange={(e) => save(e.target.value)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+          >
+            {TIMEZONES.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            value={tz}
+            onChange={(e) => setTz(e.target.value)}
+            onBlur={() => save(tz)}
+            onKeyDown={(e) => e.key === 'Enter' && save(tz)}
+            placeholder="Asia/Tashkent"
+            className={`${inputCls} w-64 font-mono`}
+          />
+        )}
+        <button type="button" onClick={() => setCustom((c) => !c)} className="text-xs text-brand-600 hover:underline dark:text-brand-300">
+          {custom ? "Ro'yxatdan tanlash" : "Boshqa zona kiritish"}
+        </button>
+        {saved && <span className="text-xs text-emerald-600">Saqlandi</span>}
+      </div>
+      {error && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
+    </section>
+  )
+}

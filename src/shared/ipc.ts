@@ -11,8 +11,45 @@
  * Xatolar: main'dagi handler AppError tashlasa, renderer'da IpcError (code, message,
  * retryAfter) sifatida reject bo'ladi. Qarang: @shared/errors.
  */
-import type { Channel, PublicAccount } from './types'
+import type { Channel, ChannelType, MediaItem, Post, PostStatus, PostTarget, PublicAccount } from './types'
 import type { IpcEnvelope } from './errors'
+import type { MediaFile } from './media'
+
+/** Post nishoni (kanal) — kanal ma'lumotlari bilan. */
+export interface TargetView extends PostTarget {
+  channel_title: string
+  channel_username: string | null
+  channel_type: ChannelType
+  account_id: number
+  avatarUrl: string | null
+}
+
+export interface PostDetail {
+  post: Post
+  targets: TargetView[]
+  media: MediaItem[]
+}
+
+export interface PostInput {
+  /** Bo'lsa — mavjud post tahrirlanadi (faqat draft/failed/scheduled). */
+  id?: number
+  title: string
+  /** Telegram HTML (b, i, u, s, a, code, pre, spoiler, blockquote). */
+  text: string
+  media: MediaItem[]
+  channelIds: number[]
+  /** ISO (UTC). null — rejalashtirilmagan (hozir yuboriladi yoki qoralama). */
+  scheduledAt: string | null
+}
+
+export interface PostFilter {
+  status?: PostStatus
+  channelId?: number
+  /** ISO oraliq (created_at yoki scheduled_at bo'yicha). */
+  from?: string
+  to?: string
+  limit?: number
+}
 
 /** Renderer ko'radigan akkaunt: sessiyasiz, ulanish holati va avatar bilan. */
 export interface AccountView extends PublicAccount {
@@ -55,6 +92,21 @@ export interface IpcChannels {
   /** Akkaunt dialoglaridan post yozish huquqi bor kanal/supergruppalarni yig'adi. */
   'channels:sync': { req: { accountId: number }; res: ChannelSyncResult }
   'channels:list': { req: { accountId?: number }; res: ChannelView[] }
+
+  'posts:list': { req: PostFilter; res: PostDetail[] }
+  'posts:get': { req: { id: number }; res: PostDetail }
+  /** Saqlaydi (yubormaydi). Rejali bo'lsa status=scheduled emas — yuborilguncha draft. */
+  'posts:save': { req: PostInput; res: PostDetail }
+  /** Nishonlarni yuboradi yoki (scheduled_at bo'lsa) Telegram'da rejalashtiradi. */
+  'posts:send': { req: { id: number }; res: PostDetail }
+  /** Faqat failed nishonlarni qayta yuboradi. */
+  'posts:retry': { req: { id: number }; res: PostDetail }
+  /** Telegram'dagi rejali xabarlarni ham bekor qiladi. */
+  'posts:delete': { req: { id: number }; res: void }
+  'posts:duplicate': { req: { id: number }; res: PostDetail }
+
+  /** Fayl tanlash dialogi (main'da). Bekor qilinsa bo'sh massiv. */
+  'media:pick': { req: void; res: MediaFile[] }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -65,6 +117,8 @@ export type IpcRes<C extends IpcChannel> = IpcChannels[C]['res']
 export interface IpcEvents {
   /** Akkauntlar ro'yxati yoki ulanish holati o'zgardi. */
   'accounts:changed': AccountView[]
+  /** Post yoki uning nishonlari o'zgardi (yuborish jarayoni, qayta urinish). */
+  'posts:changed': PostDetail
 }
 
 export type IpcEvent = keyof IpcEvents
@@ -94,6 +148,18 @@ export interface RendererApi {
   channels: {
     sync: (accountId: number) => Promise<ChannelSyncResult>
     list: (accountId?: number) => Promise<ChannelView[]>
+  }
+  posts: {
+    list: (filter?: PostFilter) => Promise<PostDetail[]>
+    get: (id: number) => Promise<PostDetail>
+    save: (input: PostInput) => Promise<PostDetail>
+    send: (id: number) => Promise<PostDetail>
+    retry: (id: number) => Promise<PostDetail>
+    delete: (id: number) => Promise<void>
+    duplicate: (id: number) => Promise<PostDetail>
+  }
+  media: {
+    pick: () => Promise<MediaFile[]>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }

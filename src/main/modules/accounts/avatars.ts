@@ -21,14 +21,7 @@ export const AVATAR_SCHEME = 'tgm-avatar'
 type AvatarKind = 'account' | 'channel'
 const KINDS: AvatarKind[] = ['account', 'channel']
 
-/** app.whenReady() dan OLDIN chaqirilishi shart. */
-export function registerAvatarScheme(): void {
-  protocol.registerSchemesAsPrivileged([
-    { scheme: AVATAR_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } }
-  ])
-}
-
-/** app.whenReady() dan KEYIN chaqiriladi. */
+/** app.whenReady() dan KEYIN chaqiriladi (protocols.ts orqali). Sxema protocols.ts da ro'yxatga olinadi. */
 export function registerAvatarProtocol(): void {
   protocol.handle(AVATAR_SCHEME, (request) => {
     const url = new URL(request.url)

@@ -1,0 +1,17 @@
+import { BrowserWindow } from 'electron'
+import { handle } from '../../ipc'
+import { pickMedia } from './media'
+import { deletePost, duplicatePost, getDetail, listPosts, savePost } from './service'
+import { sendPost } from './send'
+
+export function registerPostingIpc(): void {
+  handle('posts:list', (_e, filter) => listPosts(filter ?? {}))
+  handle('posts:get', (_e, { id }) => getDetail(id))
+  handle('posts:save', (_e, input) => savePost(input))
+  handle('posts:send', (_e, { id }) => sendPost(id))
+  handle('posts:retry', (_e, { id }) => sendPost(id, true))
+  handle('posts:delete', (_e, { id }) => deletePost(id))
+  handle('posts:duplicate', (_e, { id }) => duplicatePost(id))
+
+  handle('media:pick', (e) => pickMedia(BrowserWindow.fromWebContents(e.sender)))
+}

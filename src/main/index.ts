@@ -9,12 +9,13 @@ import { registerSettingsIpc } from './modules/settings/ipc'
 import { registerAccountsIpc } from './modules/accounts/ipc'
 import { registerChannelsIpc } from './modules/channels/ipc'
 import { clientManager } from './modules/accounts/clientManager'
-import { registerAvatarProtocol, registerAvatarScheme } from './modules/accounts/avatars'
+import { registerProtocolHandlers, registerSchemes } from './protocols'
+import { registerPostingIpc } from './modules/posting/ipc'
 
 const log = createLogger('app')
 
 // Privileged sxemalar app ready'dan oldin ro'yxatga olinishi shart
-registerAvatarScheme()
+registerSchemes()
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -56,6 +57,7 @@ function registerIpc(): void {
   registerSettingsIpc()
   registerAccountsIpc()
   registerChannelsIpc()
+  registerPostingIpc()
 }
 
 app.whenReady().then(() => {
@@ -92,7 +94,7 @@ app.whenReady().then(() => {
     log.warn(`safeStorage shifrlash mavjud emas (backend: ${backend}) — akkaunt qo'shishda xato beriladi`)
   }
 
-  registerAvatarProtocol()
+  registerProtocolHandlers()
   registerIpc()
   createWindow()
 

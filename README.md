@@ -88,6 +88,29 @@ huquqi bor joylarni yig'adi:
 Oddiy a'zo bo'lgan guruhlar va eski (basic) guruhlar ro'yxatga kirmaydi. Chiqib ketilgan yoki
 admin huquqi olib tashlangan kanallar keyingi yangilashda ro'yxatdan o'chadi.
 
+## Post yuborish va rejalashtirish
+
+**Posting** tabi → "Yangi post": matn (Telegram HTML: `<b>`, `<i>`, `<u>`, `<s>`, `<a href>`,
+`<code>`, `<spoiler>`), 1–10 ta rasm/video (albom) yoki bitta fayl, chapdan tanlangan kanallar.
+
+- **Hozir yuborish** — kanallarga ketma-ket, orasida 2–3 soniya pauza.
+- **Rejalashtirish** — Telegram'ning o'z `schedule_date` imkoniyati: post Telegram serverida
+  rejalashtiriladi, **ilova yopiq bo'lsa ham** chiqadi (365 kungacha). Vaqt Sozlamalar'dagi
+  vaqt zonasida kiritiladi (default Asia/Tashkent).
+- **Qoralama** — saqlanadi, yuborilmaydi.
+
+Holatlar: `draft` → `scheduled`/`sent`/`failed`. Har kanal (nishon) alohida holatga ega;
+bittasi xato bo'lsa post `failed`, "Qayta urinish" faqat xato bo'lganlarni yuboradi.
+
+**FLOOD_WAIT** kelsa: shu akkauntning qolgan kanallari ham `failed` bo'ladi, kutish vaqti
+xato matnida va logda ko'rsatiladi. Boshqa akkauntga o'tib davom etilmaydi.
+
+Rejali postni tahrirlash yoki o'chirish Telegram'dagi rejali xabarni ham bekor qiladi
+(akkaunt ulangan bo'lishi kerak). Yuborilgan postni tahrirlab bo'lmaydi — dublikat qiling.
+
+Eslatma: inline tugmalar faqat botlar uchun (9-qadam, rassilka). Shaxsiy akkaunt postlarida
+tugma bo'lmaydi.
+
 ### Linux'da keyring bo'lmasa (faqat dev/test)
 
 macOS (Keychain) va Windows (DPAPI) da shifrlash doim mavjud. Linux konteyner/CI'da keyring
