@@ -71,6 +71,7 @@ export default function BroadcastPanel({ botId }: { botId: number }) {
 
       {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
+      {!loaded && <div className="py-6 text-center text-xs text-slate-400">Yuklanmoqda…</div>}
       {loaded && list.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">Hali rassilka yo'q.</div>
       )}

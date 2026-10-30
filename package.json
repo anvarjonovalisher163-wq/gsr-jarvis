@@ -29,7 +29,8 @@
     "electron-updater": "^6.8.11",
     "grammy": "^1.46.0",
     "node-machine-id": "^1.1.12",
-    "telegram": "^2.26.22"
+    "telegram": "^2.26.22",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.1",

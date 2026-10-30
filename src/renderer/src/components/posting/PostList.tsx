@@ -85,6 +85,7 @@ export default function PostList({ onEdit }: { onEdit: (d: PostDetail) => void }
       {error && <p className="mx-4 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       <div className="flex-1 overflow-y-auto p-4">
+        {!loaded && <div className="py-6 text-center text-xs text-slate-400">Yuklanmoqda…</div>}
         {loaded && posts.length === 0 && (
           <div className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 dark:border-slate-700">
             Hali post yo'q.

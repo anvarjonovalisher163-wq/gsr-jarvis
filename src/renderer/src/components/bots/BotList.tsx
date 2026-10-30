@@ -41,6 +41,7 @@ export default function BotList() {
       {error && <p className="mx-2 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
+        {!loaded && <div className="py-6 text-center text-xs text-slate-400">Yuklanmoqda…</div>}
         {loaded && bots.length === 0 && (
           <div className="rounded-lg border border-dashed border-slate-300 px-3 py-6 text-center text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
             Hali bot yo'q. @BotFather'dan token oling va "Bot qo'shish" bosing.

@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { handle } from './ipc'
 import { openDatabase, closeDatabase, dbPath } from './db'
+import { logsRepo } from './db/repositories'
 import { attachLoggerToDb, createLogger } from './logger'
 import { isEncryptionAvailable } from './security/crypto'
 import { registerSettingsIpc } from './modules/settings/ipc'
@@ -24,6 +25,10 @@ const log = createLogger('app')
 // Privileged sxemalar app ready'dan oldin ro'yxatga olinishi shart
 registerSchemes()
 
+// Ushlanmagan xatolar jimgina yo'qolmasin — logga yoziladi, ilova yiqilmaydi
+process.on('unhandledRejection', (reason) => log.error('Ushlanmagan promise xatosi', reason))
+process.on('uncaughtException', (err) => log.error('Ushlanmagan istisno', err))
+
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
@@ -38,7 +43,7 @@ function createWindow(): void {
       : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -46,10 +51,19 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => mainWindow.show())
 
-  // Tashqi havolalar tizim brauzerida ochiladi
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+  // Tashqi havolalar tizim brauzerida ochiladi — faqat xavfsiz sxemalar
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^(https?:|mailto:|tg:)/i.test(url)) shell.openExternal(url).catch((e) => log.warn('openExternal', e))
+    else log.warn(`Ruxsat etilmagan havola bloklandi: ${url.slice(0, 80)}`)
     return { action: 'deny' }
+  })
+
+  // Renderer ichida boshqa sahifaga o'tish (drag-drop fayl, havola) bloklanadi
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    const devUrl = process.env['ELECTRON_RENDERER_URL']
+    if (devUrl && url.startsWith(devUrl)) return
+    e.preventDefault()
+    log.warn(`Navigatsiya bloklandi: ${url.slice(0, 80)}`)
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
@@ -82,6 +96,8 @@ app.whenReady().then(() => {
     attachLoggerToDb()
     console.log(`DB ready, version ${version}`)
     log.info(`DB ready, version ${version}`, { path: dbPath() })
+    const pruned = logsRepo.prune(30)
+    if (pruned > 0) log.info(`${pruned} ta eski log yozuvi tozalandi`)
   } catch (e) {
     log.error("Ma'lumotlar bazasini ochib bo'lmadi", e)
     dialog.showErrorBox(

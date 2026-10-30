@@ -34,6 +34,7 @@ export default function ChannelList() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
+        {!loaded && <div className="py-6 text-center text-xs text-slate-400">Yuklanmoqda…</div>}
         {accounts.length === 0 && loaded && (
           <Empty>Avval chap paneldan Telegram akkaunt qo'shing.</Empty>
         )}

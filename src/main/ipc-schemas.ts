@@ -1,0 +1,123 @@
+import { z } from 'zod'
+import type { IpcChannel, IpcReq } from '@shared/ipc'
+
+/**
+ * Har bir IPC kanali uchun kirish sxemasi. Renderer (yoki unga kirib olgan kod) yuborgan
+ * ma'lumot handler'ga yetguncha shu yerda tekshiriladi. Tip darajasida har kanal uchun sxema
+ * BO'LISHI SHART — yangi kanal qo'shilsa, bu yerga yozilmaguncha kompilyatsiya o'tmaydi.
+ */
+
+const id = z.number().int().positive()
+const optionalId = id.optional()
+const shortText = (max: number) => z.string().max(max)
+const isoDate = z.string().max(40)
+
+const mediaItem = z.object({
+  path: z.string().min(1).max(4096),
+  kind: z.enum(['photo', 'video', 'document']),
+  caption: z.string().max(1024).optional()
+})
+
+const urlButton = z.object({ text: shortText(64), url: shortText(2048) })
+const buttonRows = z.array(z.array(urlButton).max(8)).max(20)
+
+const postStatus = z.enum(['draft', 'scheduled', 'sent', 'failed'])
+
+export const ipcSchemas = {
+  'app:getVersion': z.void(),
+
+  'settings:get': z.object({ keys: z.array(shortText(64)).max(50) }),
+  'settings:set': z.object({ values: z.record(shortText(64), shortText(4096)) }),
+
+  'accounts:list': z.void(),
+  'accounts:sendCode': z.object({ phone: shortText(32) }),
+  'accounts:signIn': z.object({ code: shortText(16) }),
+  'accounts:check2FA': z.object({ password: shortText(512) }),
+  'accounts:cancelLogin': z.void(),
+  'accounts:logout': z.object({ id }),
+  'accounts:remove': z.object({ id }),
+
+  'channels:sync': z.object({ accountId: id }),
+  'channels:list': z.object({ accountId: optionalId }),
+
+  'posts:list': z.object({
+    status: postStatus.optional(),
+    channelId: optionalId,
+    from: isoDate.optional(),
+    to: isoDate.optional(),
+    limit: z.number().int().min(1).max(1000).optional()
+  }),
+  'posts:get': z.object({ id }),
+  'posts:save': z.object({
+    id: optionalId,
+    title: shortText(200),
+    text: shortText(20_000),
+    media: z.array(mediaItem).max(10),
+    channelIds: z.array(id).max(500),
+    scheduledAt: isoDate.nullable()
+  }),
+  'posts:send': z.object({ id }),
+  'posts:retry': z.object({ id }),
+  'posts:delete': z.object({ id }),
+  'posts:duplicate': z.object({ id }),
+
+  'media:pick': z.void(),
+
+  'bots:list': z.void(),
+  'bots:add': z.object({ token: shortText(200) }),
+  'bots:start': z.object({ id }),
+  'bots:stop': z.object({ id }),
+  'bots:remove': z.object({ id }),
+
+  'botRules:list': z.object({ botId: id }),
+  'botRules:save': z.object({
+    id: optionalId,
+    bot_id: id,
+    trigger_type: z.enum(['command', 'keyword', 'any']),
+    trigger_value: shortText(200).nullable(),
+    reply_text: shortText(8192),
+    reply_media: mediaItem.nullable(),
+    reply_buttons: buttonRows,
+    is_active: z.boolean()
+  }),
+  'botRules:delete': z.object({ id }),
+  'botRules:toggle': z.object({ id, active: z.boolean() }),
+
+  'subscribers:list': z.object({
+    botId: id,
+    search: shortText(100).optional(),
+    tag: shortText(64).optional(),
+    activeOnly: z.boolean().optional()
+  }),
+  'subscribers:tags': z.object({ botId: id }),
+  'subscribers:exportCsv': z.object({ botId: id }),
+  'subscribers:count': z.object({ botId: id, tag: shortText(64).nullable().optional() }),
+
+  'broadcasts:list': z.object({ botId: optionalId }),
+  'broadcasts:create': z.object({
+    bot_id: id,
+    text: shortText(8192),
+    media: mediaItem.nullable(),
+    buttons: buttonRows,
+    tag_filter: shortText(64).nullable(),
+    scheduledAt: isoDate.nullable()
+  }),
+  'broadcasts:pause': z.object({ id }),
+  'broadcasts:resume': z.object({ id }),
+  'broadcasts:cancel': z.object({ id }),
+  'broadcasts:delete': z.object({ id }),
+  'broadcasts:report': z.object({ id }),
+
+  'license:status': z.void(),
+  'license:startTrial': z.object({ email: shortText(200) }),
+  'license:activate': z.object({ key: shortText(64) }),
+  'license:check': z.void(),
+  'license:deactivate': z.void(),
+
+  'updater:status': z.void(),
+  'updater:check': z.void(),
+  'updater:download': z.void(),
+  'updater:install': z.void()
+} satisfies { [C in IpcChannel]: z.ZodType<IpcReq<C>, z.ZodTypeDef, unknown> }
+
+export type IpcSchemas = typeof ipcSchemas

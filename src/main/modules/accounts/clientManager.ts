@@ -22,6 +22,8 @@ class ClientManager {
   private onChange: (() => void) | null = null
   private statusTimer: NodeJS.Timeout | null = null
   private lastStatus = new Map<number, boolean>()
+  /** Qayta ulanish urinishlari orasidagi kutish (accountId → keyingi urinish vaqti). */
+  private reconnectAt = new Map<number, number>()
 
   /** Ulanish holati o'zgarganda chaqiriladigan callback (UI'ga push uchun). */
   setOnChange(cb: () => void): void {
@@ -136,8 +138,9 @@ class ClientManager {
     if (this.statusTimer) return
     this.statusTimer = setInterval(() => {
       let changed = false
-      for (const [id] of this.clients) {
+      for (const [id, client] of this.clients) {
         const now = this.isConnected(id)
+        if (!now) this.tryReconnect(id, client)
         if (this.lastStatus.get(id) !== now) {
           this.lastStatus.set(id, now)
           changed = true
@@ -145,6 +148,24 @@ class ClientManager {
       }
       if (changed) this.emit()
     }, 15_000)
+  }
+
+  /**
+   * Internet uzilib GramJS'ning o'z urinishlari tugagan bo'lsa, har 60 soniyada qayta ulanamiz.
+   * Sessiya o'zgarmaydi — foydalanuvchi qayta login qilmaydi.
+   */
+  private tryReconnect(accountId: number, client: TelegramClient): void {
+    const next = this.reconnectAt.get(accountId) ?? 0
+    if (Date.now() < next) return
+    this.reconnectAt.set(accountId, Date.now() + 60_000)
+    log.info(`Akkaunt ${accountId}: ulanish yo'q, qayta ulanish urinishi`)
+    withTimeout(client.connect(), TELEGRAM_TIMEOUT_MS)
+      .then(() => {
+        log.info(`Akkaunt ${accountId}: qayta ulandi`)
+        this.reconnectAt.delete(accountId)
+        this.emit()
+      })
+      .catch((e) => log.warn(`Akkaunt ${accountId}: qayta ulanmadi`, mapTelegramError(e).message))
   }
 
   private emit(): void {
