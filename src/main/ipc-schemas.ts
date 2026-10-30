@@ -22,6 +22,7 @@ const urlButton = z.object({ text: shortText(64), url: shortText(2048) })
 const buttonRows = z.array(z.array(urlButton).max(8)).max(20)
 
 const postStatus = z.enum(['draft', 'scheduled', 'sent', 'failed'])
+const peerKey = z.string().regex(/^(u|c|ch)\d{1,20}$/)
 const logQuery = z.object({
   level: z.enum(['debug', 'info', 'warn', 'error']).optional(),
   module: shortText(64).optional(),
@@ -136,6 +137,14 @@ export const ipcSchemas = {
 
   'backup:export': z.void(),
   'backup:import': z.void(),
+
+  'chats:dialogs': z.object({ accountId: id, offsetDate: z.number().int().nonnegative().optional() }),
+  'chats:messages': z.object({ accountId: id, peer: peerKey, offsetId: z.number().int().nonnegative().optional() }),
+  'chats:send': z.object({ accountId: id, peer: peerKey, text: shortText(4096), filePath: z.string().min(1).max(4096).optional() }),
+  'chats:markRead': z.object({ accountId: id, peer: peerKey }),
+  'chats:avatar': z.object({ accountId: id, peer: peerKey }),
+  'chats:thumb': z.object({ accountId: id, peer: peerKey, msgId: id }),
+  'chats:download': z.object({ accountId: id, peer: peerKey, msgId: id }),
 
   'app:getSettings': z.void(),
   'app:setSettings': z.object({

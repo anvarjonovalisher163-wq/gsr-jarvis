@@ -86,6 +86,7 @@ import type { UpdaterStatus } from './updater'
 import type { LogQuery, TaskView } from './tasks'
 import type { AppSettings } from './network'
 import type { LogEntry } from './types'
+import type { DialogsPage, MessageView } from './chats'
 
 /** Post nishoni (kanal) — kanal ma'lumotlari bilan. */
 export interface TargetView extends PostTarget {
@@ -239,6 +240,17 @@ export interface IpcChannels {
   /** Zip tanlanadi, baza almashtiriladi va ilova qayta ishga tushadi. */
   'backup:import': { req: void; res: { restarted: boolean } }
 
+  'chats:dialogs': { req: { accountId: number; offsetDate?: number }; res: DialogsPage }
+  'chats:messages': { req: { accountId: number; peer: string; offsetId?: number }; res: MessageView[] }
+  'chats:send': { req: { accountId: number; peer: string; text: string; filePath?: string }; res: MessageView }
+  'chats:markRead': { req: { accountId: number; peer: string }; res: void }
+  /** Dialog avatari (keshlanadi) — URL yoki null */
+  'chats:avatar': { req: { accountId: number; peer: string }; res: string | null }
+  /** Rasm/video thumbnail (keshlanadi) — tgm-file URL yoki null */
+  'chats:thumb': { req: { accountId: number; peer: string; msgId: number }; res: string | null }
+  /** Faylni saqlash dialogi bilan yuklab olish */
+  'chats:download': { req: { accountId: number; peer: string; msgId: number }; res: { path: string | null } }
+
   'app:getSettings': { req: void; res: AppSettings }
   'app:setSettings': { req: Partial<AppSettings>; res: AppSettings }
 }
@@ -261,6 +273,8 @@ export interface IpcEvents {
   'broadcasts:changed': BroadcastView
   'license:changed': LicenseStatus
   'updater:changed': UpdaterStatus
+  /** Yangi xabar (kiruvchi yoki boshqa qurilmadan chiquvchi) */
+  'chats:newMessage': { accountId: number; peer: string; message: MessageView; dialog: DialogsPage['dialogs'][number] | null }
 }
 
 export type IpcEvent = keyof IpcEvents
@@ -355,6 +369,15 @@ export interface RendererApi {
   backup: {
     export: () => Promise<{ path: string | null }>
     import: () => Promise<{ restarted: boolean }>
+  }
+  chats: {
+    dialogs: (accountId: number, offsetDate?: number) => Promise<DialogsPage>
+    messages: (accountId: number, peer: string, offsetId?: number) => Promise<MessageView[]>
+    send: (accountId: number, peer: string, text: string, filePath?: string) => Promise<MessageView>
+    markRead: (accountId: number, peer: string) => Promise<void>
+    avatar: (accountId: number, peer: string) => Promise<string | null>
+    thumb: (accountId: number, peer: string, msgId: number) => Promise<string | null>
+    download: (accountId: number, peer: string, msgId: number) => Promise<{ path: string | null }>
   }
   app: {
     getVersion: () => Promise<string>

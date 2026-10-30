@@ -31,6 +31,18 @@ class ClientManager {
     this.onChange = cb
   }
 
+  private readyHooks: ((accountId: number, client: TelegramClient) => void)[] = []
+  private goneHooks: ((accountId: number) => void)[] = []
+
+  /** Klient ulanib tayyor bo'lganda (hodisa handler'larini ulash uchun). */
+  onClientReady(cb: (accountId: number, client: TelegramClient) => void): void {
+    this.readyHooks.push(cb)
+    for (const [id, c] of this.clients) cb(id, c)
+  }
+  onClientGone(cb: (accountId: number) => void): void {
+    this.goneHooks.push(cb)
+  }
+
   /** Yangi klient yaratadi (ulamaydi). session bo'sh bo'lsa — login uchun. */
   createClient(session = ''): TelegramClient {
     const { apiId, apiHash } = getApiCredentials()
@@ -77,6 +89,7 @@ class ClientManager {
         return
       }
       this.clients.set(account.id, client)
+      for (const h of this.readyHooks) h(account.id, client)
       this.refreshProfile(account.id, client).catch(() => {})
       log.info(`Akkaunt ${account.id} (${account.phone}) ulandi`)
     } catch (e) {
@@ -95,6 +108,7 @@ class ClientManager {
   /** Login tugagach tayyor klientni ro'yxatga oladi. */
   adopt(accountId: number, client: TelegramClient): void {
     this.clients.set(accountId, client)
+    for (const h of this.readyHooks) h(accountId, client)
     this.emit()
   }
 
@@ -102,6 +116,7 @@ class ClientManager {
     const client = this.clients.get(accountId)
     if (!client) return
     this.clients.delete(accountId)
+    for (const h of this.goneHooks) h(accountId)
     await client.disconnect().catch((e) => log.warn(`Akkaunt ${accountId} uzishda xato`, e))
     this.emit()
   }

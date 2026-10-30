@@ -77,6 +77,17 @@ Akkaunt ustida o'ng klik: **Chiqish** (Telegram sessiyasi yopiladi, akkaunt ro'y
 
 Qoida: FLOOD_WAIT kelsa ilova faqat kutadi va qolgan vaqtni ko'rsatadi — boshqa akkauntga o'tmaydi.
 
+## Chatlar
+
+**Chatlar** tabi: tepada akkaunt tablari (har biri alohida akkaunt), o'rtada dialoglar (qidiruv,
+filtr: Hammasi / Shaxsiy / Guruhlar / Kanallar; 50 tadan sahifalab, pastga skroll qilganda yana),
+o'ngda xabarlar tarixi (tepaga skroll — eskilari), matn/rasm/video/fayl ko'rinishi, xabar yozish va
+fayl biriktirish. Yangi xabarlar real vaqtda keladi (GramJS `NewMessage`). Ro'yxatlar
+virtualizatsiyalangan (`react-virtuoso`) — 1000+ chatda ham tez.
+
+Bu yerda faqat foydalanuvchi o'zi tanlagan chatga qo'lda xabar yuboriladi — ommaviy yuborish yo'q.
+Rasm/video thumbnail'lari va avatarlar `userData/media-cache`, `avatars/` da keshlanadi.
+
 ## Kanallarni sinxronlash
 
 **Posting** tabi → chapda "Kanallarim" → **Yangilash**. Ilova akkaunt dialoglaridan post yozish

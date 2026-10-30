@@ -30,6 +30,7 @@
     "electron-updater": "^6.8.11",
     "grammy": "^1.46.0",
     "node-machine-id": "^1.1.12",
+    "react-virtuoso": "^4.18.20",
     "telegram": "^2.26.22",
     "zod": "^3.25.76"
   },

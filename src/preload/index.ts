@@ -11,6 +11,15 @@ function invoke<C extends IpcChannel>(channel: C, req?: IpcReq<C>): Promise<IpcE
 }
 
 const api: BridgeApi = {
+  chats: {
+    dialogs: (accountId, offsetDate) => invoke('chats:dialogs', { accountId, offsetDate }),
+    messages: (accountId, peer, offsetId) => invoke('chats:messages', { accountId, peer, offsetId }),
+    send: (accountId, peer, text, filePath) => invoke('chats:send', { accountId, peer, text, filePath }),
+    markRead: (accountId, peer) => invoke('chats:markRead', { accountId, peer }),
+    avatar: (accountId, peer) => invoke('chats:avatar', { accountId, peer }),
+    thumb: (accountId, peer, msgId) => invoke('chats:thumb', { accountId, peer, msgId }),
+    download: (accountId, peer, msgId) => invoke('chats:download', { accountId, peer, msgId })
+  },
   app: {
     getVersion: () => invoke('app:getVersion'),
     getSettings: () => invoke('app:getSettings'),

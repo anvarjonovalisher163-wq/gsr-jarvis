@@ -11,6 +11,10 @@ import type { MediaItem } from '@shared/types'
  */
 const allowed = new Set<string>()
 
+export function isAllowedMediaPath(path: string): boolean {
+  return allowed.has(path)
+}
+
 export function allowMediaPaths(items: MediaItem[]): void {
   for (const m of items) allowed.add(m.path)
 }

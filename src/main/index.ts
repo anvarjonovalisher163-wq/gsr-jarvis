@@ -25,6 +25,8 @@ import { registerBackupIpc } from './modules/backup/ipc'
 import { applyAutoStart, getAppSettings, registerAppSettingsIpc } from './modules/appSettings/ipc'
 import { applyProxy } from './modules/network/proxy'
 import { createTray, destroyTray } from './modules/tray'
+import { registerChatsIpc } from './modules/chats/ipc'
+import { initChatEvents } from './modules/chats/service'
 
 const log = createLogger('app')
 
@@ -120,6 +122,7 @@ function registerIpc(): void {
   registerLogsIpc()
   registerBackupIpc()
   registerAppSettingsIpc()
+  registerChatsIpc()
 }
 
 app.whenReady().then(() => {
@@ -160,6 +163,7 @@ app.whenReady().then(() => {
 
   registerProtocolHandlers()
   registerIpc()
+  initChatEvents()
   // Proksi Telegram ulanishlaridan OLDIN qo'llanadi
   applyProxy().catch((e) => log.warn('Proksi qo\'llanmadi', e))
   applyAutoStart()

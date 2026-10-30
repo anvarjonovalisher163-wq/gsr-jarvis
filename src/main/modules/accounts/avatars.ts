@@ -18,16 +18,17 @@ const log = createLogger('avatars')
  */
 export const AVATAR_SCHEME = 'tgm-avatar'
 
-type AvatarKind = 'account' | 'channel'
-const KINDS: AvatarKind[] = ['account', 'channel']
+type AvatarKind = 'account' | 'channel' | 'peer'
+const KINDS: AvatarKind[] = ['account', 'channel', 'peer']
+const ID_RE = /^[A-Za-z0-9_-]{1,80}$/
 
 /** app.whenReady() dan KEYIN chaqiriladi (protocols.ts orqali). Sxema protocols.ts da ro'yxatga olinadi. */
 export function registerAvatarProtocol(): void {
   protocol.handle(AVATAR_SCHEME, (request) => {
     const url = new URL(request.url)
     const kind = url.hostname as AvatarKind
-    const id = Number(url.pathname.replace('/', ''))
-    if (!KINDS.includes(kind) || !Number.isInteger(id)) return new Response('', { status: 400 })
+    const id = decodeURIComponent(url.pathname.replace('/', ''))
+    if (!KINDS.includes(kind) || !ID_RE.test(id)) return new Response('', { status: 400 })
     const file = avatarFile(kind, id)
     if (!existsSync(file)) return new Response('', { status: 404 })
     return net.fetch(pathToFileURL(file).toString())
@@ -40,12 +41,12 @@ export function avatarDir(): string {
   return dir
 }
 
-export function avatarFile(kind: AvatarKind, id: number): string {
+export function avatarFile(kind: AvatarKind, id: number | string): string {
   return join(avatarDir(), `${kind}-${id}.jpg`)
 }
 
 /** Renderer uchun URL; fayl yo'q bo'lsa null. mtime — kesh buzish uchun. */
-export function avatarUrl(kind: AvatarKind, id: number): string | null {
+export function avatarUrl(kind: AvatarKind, id: number | string): string | null {
   const file = avatarFile(kind, id)
   if (!existsSync(file)) return null
   return `${AVATAR_SCHEME}://${kind}/${id}?v=${statSync(file).mtimeMs}`
@@ -59,7 +60,7 @@ export async function downloadAvatar(
   client: TelegramClient,
   entity: EntityLike,
   kind: AvatarKind,
-  id: number
+  id: number | string
 ): Promise<string | null> {
   try {
     const buf = await client.downloadProfilePhoto(entity, { isBig: false })
@@ -73,7 +74,7 @@ export async function downloadAvatar(
   }
 }
 
-export function deleteAvatar(kind: AvatarKind, id: number): void {
+export function deleteAvatar(kind: AvatarKind, id: number | string): void {
   const file = avatarFile(kind, id)
   if (existsSync(file)) unlinkSync(file)
 }
