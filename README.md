@@ -37,9 +37,13 @@ Sozlamalar tabida ilova versiyasi ko'rinadi.
 
 ## Native modullar (better-sqlite3)
 
-`npm install` oxirida `postinstall` avtomatik ravishda native modullarni Electron uchun qayta
-kompilyatsiya qiladi. Agar `npm install <paket>` bilan yangi native paket qo'shsangiz yoki
-"was compiled against a different Node.js version" xatosi chiqsa:
+`better-sqlite3@12.11.1` Node 20/22/24 va Electron 33 uchun Windows (x64) va macOS (arm64/x64)
+tayyor binarlariga ega — Visual Studio yoki Xcode kerak emas. Agar `npm install` paytida
+`gyp ERR! find VS` xatosi chiqsa, demak paket versiyasi Node versiyangizga mos tayyor binar
+topa olmagan: `npm install` ni qayta ishga tushiring yoki Node 22 LTS o'rnating.
+
+`npm install` oxirida `postinstall` avtomatik ravishda `better-sqlite3` ni Electron uchun qayta
+yuklaydi (tayyor binar). Agar "was compiled against a different Node.js version" xatosi chiqsa:
 
 ```bash
 npx electron-builder install-app-deps
