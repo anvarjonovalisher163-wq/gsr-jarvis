@@ -48,7 +48,8 @@ jobs:
       - name: .env (litsenziya serveri)
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.owner_mode }}" = "true" ]; then
+          # Litsenziya serveri secrets'i bo'lmasa ham egasi rejimida build qilinadi
+          if { [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.owner_mode }}" = "true" ]; } || [ -z "${{ secrets.SUPABASE_URL }}" ]; then
             echo "MAIN_VITE_OWNER_MODE=1" > .env
           else
             cat > .env <<EOF
