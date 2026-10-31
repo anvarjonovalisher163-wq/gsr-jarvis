@@ -6,15 +6,20 @@ import type { IpcEnvelope } from '@shared/errors'
  * Envelope'ni o'zgartirmasdan qaytaradi. Bridge Error'larning code maydonini
  * yo'qotgani uchun ochish renderer'da (@renderer/lib/api) bajariladi.
  */
-function invoke<C extends IpcChannel>(channel: C, req?: IpcReq<C>): Promise<IpcEnvelope<IpcRes<C>>> {
+function invoke<C extends IpcChannel>(
+  channel: C,
+  req?: IpcReq<C>
+): Promise<IpcEnvelope<IpcRes<C>>> {
   return ipcRenderer.invoke(channel, req)
 }
 
 const api: BridgeApi = {
   chats: {
     dialogs: (accountId, offsetDate) => invoke('chats:dialogs', { accountId, offsetDate }),
-    messages: (accountId, peer, offsetId) => invoke('chats:messages', { accountId, peer, offsetId }),
-    send: (accountId, peer, text, filePath) => invoke('chats:send', { accountId, peer, text, filePath }),
+    messages: (accountId, peer, offsetId) =>
+      invoke('chats:messages', { accountId, peer, offsetId }),
+    send: (accountId, peer, text, filePath) =>
+      invoke('chats:send', { accountId, peer, text, filePath }),
     markRead: (accountId, peer) => invoke('chats:markRead', { accountId, peer }),
     avatar: (accountId, peer) => invoke('chats:avatar', { accountId, peer }),
     thumb: (accountId, peer, msgId) => invoke('chats:thumb', { accountId, peer, msgId }),
@@ -41,6 +46,36 @@ const api: BridgeApi = {
     getVersion: () => invoke('app:getVersion'),
     getSettings: () => invoke('app:getSettings'),
     setSettings: (patch) => invoke('app:setSettings', patch)
+  },
+  templates: {
+    list: () => invoke('templates:list'),
+    save: (input) => invoke('templates:save', input),
+    delete: (id) => invoke('templates:delete', { id })
+  },
+  blacklist: {
+    list: (search) => invoke('blacklist:list', { search }),
+    add: (input) => invoke('blacklist:add', input),
+    remove: (id) => invoke('blacklist:remove', { id })
+  },
+  campaigns: {
+    list: (accountId) => invoke('campaigns:list', { accountId }),
+    get: (id) => invoke('campaigns:get', { id }),
+    save: (input) => invoke('campaigns:save', input),
+    start: (id) => invoke('campaigns:start', { id }),
+    pause: (id) => invoke('campaigns:pause', { id }),
+    resume: (id) => invoke('campaigns:resume', { id }),
+    cancel: (id) => invoke('campaigns:cancel', { id }),
+    delete: (id) => invoke('campaigns:delete', { id }),
+    quota: (accountId) => invoke('campaigns:quota', { accountId })
+  },
+  apiServer: {
+    status: () => invoke('apiServer:status'),
+    configure: (patch) => invoke('apiServer:configure', patch),
+    regenerateKey: () => invoke('apiServer:regenerateKey')
+  },
+  profile: {
+    get: () => invoke('profile:get'),
+    set: (p) => invoke('profile:set', p)
   },
   tasks: {
     list: () => invoke('tasks:list'),

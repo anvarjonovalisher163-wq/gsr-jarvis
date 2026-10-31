@@ -1,3 +1,4 @@
+import TemplatePicker from '@renderer/components/outreach/TemplatePicker'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Bold,
@@ -113,7 +114,8 @@ export default function PostEditor({ editing, onDone }: Props) {
   }
 
   const applyLink = () => {
-    if (linkUrl && /^(https?:\/\/|tg:\/\/)/i.test(linkUrl.trim())) wrap(`<a href="${linkUrl.trim()}">`, '</a>')
+    if (linkUrl && /^(https?:\/\/|tg:\/\/)/i.test(linkUrl.trim()))
+      wrap(`<a href="${linkUrl.trim()}">`, '</a>')
     setLinkUrl(null)
   }
 
@@ -147,8 +149,10 @@ export default function PostEditor({ editing, onDone }: Props) {
     setError(null)
     setNotice(null)
     try {
-      if (kind === 'send' && selectedIds.length === 0) throw new Error('Kamida bitta kanal tanlang.')
-      if (mode === 'schedule' && !scheduledIso) throw new Error("Rejalashtirish vaqtini to'g'ri kiriting.")
+      if (kind === 'send' && selectedIds.length === 0)
+        throw new Error('Kamida bitta kanal tanlang.')
+      if (mode === 'schedule' && !scheduledIso)
+        throw new Error("Rejalashtirish vaqtini to'g'ri kiriting.")
       const saved = await save(buildInput(scheduledAt))
       if (kind === 'save') {
         // Yangi post saqlandi → endi shu postni tahrirlaymiz, aks holda keyingi saqlash nusxa yaratadi
@@ -186,10 +190,16 @@ export default function PostEditor({ editing, onDone }: Props) {
           <Tool icon={Strikethrough} title="O'chirilgan" onClick={() => wrap('<s>', '</s>')} />
           <Tool icon={Code} title="Kod" onClick={() => wrap('<code>', '</code>')} />
           <Tool icon={EyeOff} title="Spoiler" onClick={() => wrap('<spoiler>', '</spoiler>')} />
-          <Tool icon={Link2} title="Havola" onClick={() => setLinkUrl((v) => (v === null ? 'https://' : null))} />
+          <Tool
+            icon={Link2}
+            title="Havola"
+            onClick={() => setLinkUrl((v) => (v === null ? 'https://' : null))}
+          />
           <span className="mx-1 h-4 w-px bg-slate-200 dark:bg-slate-700" />
           <Tool icon={Paperclip} title="Media biriktirish" onClick={pick} label="Media" />
-          <span className={`ml-auto text-xs ${tooLong ? 'font-medium text-red-600' : 'text-slate-400'}`}>
+          <span
+            className={`ml-auto text-xs ${tooLong ? 'font-medium text-red-600' : 'text-slate-400'}`}
+          >
             {len}/{maxLen}
           </span>
         </div>
@@ -207,17 +217,29 @@ export default function PostEditor({ editing, onDone }: Props) {
               placeholder="https://..."
               className={`${inputCls} flex-1 py-1 text-xs`}
             />
-            <button type="button" onClick={applyLink} className="rounded-md bg-brand-500 px-2.5 py-1 text-xs text-white">
+            <button
+              type="button"
+              onClick={applyLink}
+              className="rounded-md bg-brand-500 px-2.5 py-1 text-xs text-white"
+            >
               Qo'llash
             </button>
           </div>
         )}
 
+        <div className="mb-1 flex justify-end">
+          <TemplatePicker
+            onPick={(t) => {
+              setText(t.text)
+              if (t.media) setMedia([t.media])
+            }}
+          />
+        </div>
         <textarea
           ref={textRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Post matni… Formatlash: <b>qalin</b>, <i>kursiv</i>, <a href=&quot;https://…&quot;>havola</a>"
+          placeholder='Post matni… Formatlash: <b>qalin</b>, <i>kursiv</i>, <a href="https://…">havola</a>'
           spellCheck
           className={`${inputCls} min-h-[180px] flex-1 resize-y font-[inherit] leading-relaxed`}
         />
@@ -266,7 +288,9 @@ export default function PostEditor({ editing, onDone }: Props) {
         <div className="mt-4">
           <div className="mb-1 text-xs font-medium text-slate-500">
             Kanallar ({selectedChannels.length})
-            {selectedChannels.length === 0 && <span className="ml-1 font-normal">— chap paneldan tanlang</span>}
+            {selectedChannels.length === 0 && (
+              <span className="ml-1 font-normal">— chap paneldan tanlang</span>
+            )}
           </div>
           <div className="flex flex-wrap gap-1.5">
             {selectedChannels.map((c) => (
@@ -280,7 +304,12 @@ export default function PostEditor({ editing, onDone }: Props) {
                   <span className="inline-block h-4 w-4 rounded-full bg-slate-300 dark:bg-slate-600" />
                 )}
                 {c.title}
-                <button type="button" onClick={() => toggle(c.id)} className="text-slate-400 hover:text-red-600" aria-label="Olib tashlash">
+                <button
+                  type="button"
+                  onClick={() => toggle(c.id)}
+                  className="text-slate-400 hover:text-red-600"
+                  aria-label="Olib tashlash"
+                >
                   <X size={11} />
                 </button>
               </span>
@@ -292,11 +321,21 @@ export default function PostEditor({ editing, onDone }: Props) {
         <div className="mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <label className="inline-flex items-center gap-1.5">
-              <input type="radio" checked={mode === 'now'} onChange={() => setMode('now')} className="accent-brand-500" />
+              <input
+                type="radio"
+                checked={mode === 'now'}
+                onChange={() => setMode('now')}
+                className="accent-brand-500"
+              />
               Hozir yuborish
             </label>
             <label className="inline-flex items-center gap-1.5">
-              <input type="radio" checked={mode === 'schedule'} onChange={() => setMode('schedule')} className="accent-brand-500" />
+              <input
+                type="radio"
+                checked={mode === 'schedule'}
+                onChange={() => setMode('schedule')}
+                className="accent-brand-500"
+              />
               Rejalashtirish
             </label>
             {mode === 'schedule' && (
@@ -337,7 +376,13 @@ export default function PostEditor({ editing, onDone }: Props) {
             onClick={() => run('send', scheduledIso)}
             className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
           >
-            {busy === 'send' ? <Loader2 size={14} className="animate-spin" /> : mode === 'now' ? <Send size={14} /> : <Calendar size={14} />}
+            {busy === 'send' ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : mode === 'now' ? (
+              <Send size={14} />
+            ) : (
+              <Calendar size={14} />
+            )}
             {mode === 'now' ? 'Hozir yuborish' : 'Rejalashtirish'}
           </button>
           {editing && (

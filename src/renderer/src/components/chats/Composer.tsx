@@ -5,6 +5,7 @@ import type { MediaFile } from '@shared/media'
 import { api } from '@renderer/lib/api'
 import { describeError } from '@renderer/lib/errors'
 import { useChats } from '@renderer/store/chats'
+import TemplatePicker from '@renderer/components/outreach/TemplatePicker'
 
 /** Xabar yozish: matn + bitta fayl. Enter — yuborish, Shift+Enter — yangi qator. */
 export default function Composer({ accountId, peer }: { accountId: number; peer: PeerKey }) {
@@ -46,15 +47,43 @@ export default function Composer({ accountId, peer }: { accountId: number; peer:
         <div className="mb-2 flex items-center gap-2 rounded-lg bg-slate-100 px-2 py-1 text-xs dark:bg-slate-800">
           <Paperclip size={12} />
           <span className="min-w-0 flex-1 truncate">{file.name}</span>
-          <span className="text-slate-400">{file.size > 1048576 ? `${(file.size / 1048576).toFixed(1)} MB` : `${Math.ceil(file.size / 1024)} KB`}</span>
-          <button type="button" onClick={() => setFile(null)} className="text-slate-400 hover:text-red-600" aria-label="Olib tashlash">
+          <span className="text-slate-400">
+            {file.size > 1048576
+              ? `${(file.size / 1048576).toFixed(1)} MB`
+              : `${Math.ceil(file.size / 1024)} KB`}
+          </span>
+          <button
+            type="button"
+            onClick={() => setFile(null)}
+            className="text-slate-400 hover:text-red-600"
+            aria-label="Olib tashlash"
+          >
             <X size={12} />
           </button>
         </div>
       )}
       {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
       <div className="flex items-end gap-2">
-        <button type="button" onClick={pick} title="Fayl biriktirish" className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+        <TemplatePicker
+          compact
+          onPick={(t) => {
+            setText(t.text.replace(/<[^>]+>/g, ''))
+            if (t.media)
+              setFile({
+                path: t.media.path,
+                kind: t.media.kind,
+                name: t.media.path.split(/[\\/]/).pop() ?? 'fayl',
+                size: 0,
+                url: ''
+              })
+          }}
+        />
+        <button
+          type="button"
+          onClick={pick}
+          title="Fayl biriktirish"
+          className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+        >
           <Paperclip size={18} />
         </button>
         <textarea

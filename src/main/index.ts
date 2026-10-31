@@ -3,7 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { handle } from './ipc'
 import { openDatabase, closeDatabase, dbPath } from './db'
-import { logsRepo } from './db/repositories'
+import { logsRepo, sendLogRepo } from './db/repositories'
 import { attachLoggerToDb, createLogger } from './logger'
 import { isEncryptionAvailable } from './security/crypto'
 import { registerSettingsIpc } from './modules/settings/ipc'
@@ -29,6 +29,10 @@ import { registerChatsIpc } from './modules/chats/ipc'
 import { initChatEvents } from './modules/chats/service'
 import { registerContactsIpc } from './modules/contacts/ipc'
 import { registerStatsIpc } from './modules/stats/ipc'
+import { registerOutreachIpc } from './modules/outreach/ipc'
+import { campaignRunner } from './modules/outreach/campaignRunner'
+import { registerApiServerIpc } from './modules/apiServer/ipc'
+import { apiServer } from './modules/apiServer/server'
 
 const log = createLogger('app')
 
@@ -91,7 +95,8 @@ function createWindow(): void {
 
   // Tashqi havolalar tizim brauzerida ochiladi — faqat xavfsiz sxemalar
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^(https?:|mailto:|tg:)/i.test(url)) shell.openExternal(url).catch((e) => log.warn('openExternal', e))
+    if (/^(https?:|mailto:|tg:)/i.test(url))
+      shell.openExternal(url).catch((e) => log.warn('openExternal', e))
     else log.warn(`Ruxsat etilmagan havola bloklandi: ${url.slice(0, 80)}`)
     return { action: 'deny' }
   })
@@ -127,6 +132,8 @@ function registerIpc(): void {
   registerChatsIpc()
   registerContactsIpc()
   registerStatsIpc()
+  registerOutreachIpc()
+  registerApiServerIpc()
 }
 
 app.whenReady().then(() => {
@@ -142,12 +149,14 @@ app.whenReady().then(() => {
     console.log(`DB ready, version ${version}`)
     log.info(`DB ready, version ${version}`, { path: dbPath() })
     const pruned = logsRepo.prune(30)
+    sendLogRepo.prune(90)
     if (pruned > 0) log.info(`${pruned} ta eski log yozuvi tozalandi`)
   } catch (e) {
     log.error("Ma'lumotlar bazasini ochib bo'lmadi", e)
     dialog.showErrorBox(
       'TG Manager',
-      "Ma'lumotlar bazasini ochib bo'lmadi. Ilova yopiladi.\n\n" + (e instanceof Error ? e.message : String(e))
+      "Ma'lumotlar bazasini ochib bo'lmadi. Ilova yopiladi.\n\n" +
+        (e instanceof Error ? e.message : String(e))
     )
     app.quit()
     return
@@ -162,14 +171,16 @@ app.whenReady().then(() => {
 
   if (!isEncryptionAvailable()) {
     const backend = process.platform === 'linux' ? safeStorage.getSelectedStorageBackend() : 'n/a'
-    log.warn(`safeStorage shifrlash mavjud emas (backend: ${backend}) — akkaunt qo'shishda xato beriladi`)
+    log.warn(
+      `safeStorage shifrlash mavjud emas (backend: ${backend}) — akkaunt qo'shishda xato beriladi`
+    )
   }
 
   registerProtocolHandlers()
   registerIpc()
   initChatEvents()
   // Proksi Telegram ulanishlaridan OLDIN qo'llanadi
-  applyProxy().catch((e) => log.warn('Proksi qo\'llanmadi', e))
+  applyProxy().catch((e) => log.warn("Proksi qo'llanmadi", e))
   applyAutoStart()
   createWindow()
   createTray(openWindow, () => app.quit())
@@ -177,7 +188,11 @@ app.whenReady().then(() => {
   initUpdater()
 
   // Saqlangan akkauntlarni fonda ulaymiz; oyna kutib turmaydi
-  clientManager.connectAll().catch((e) => log.error('Akkauntlarni ulashda xato', e))
+  clientManager
+    .connectAll()
+    .catch((e) => log.error('Akkauntlarni ulashda xato', e))
+    .finally(() => campaignRunner.init())
+  apiServer.init().catch((e) => log.error('API server', e))
   botManager
     .startAll()
     .catch((e) => log.error('Botlarni ishga tushirishda xato', e))
@@ -204,9 +219,14 @@ app.on('before-quit', (e) => {
   e.preventDefault()
   quitting = true
   broadcastRunner.stop()
+  campaignRunner.stop()
   destroyTray()
   // Avval Telegram ulanishlari va botlar toza yopiladi, keyin chiqamiz
-  Promise.allSettled([clientManager.disconnectAll(), botManager.stopAll()]).finally(() => app.exit(0))
+  Promise.allSettled([
+    clientManager.disconnectAll(),
+    botManager.stopAll(),
+    apiServer.stop()
+  ]).finally(() => app.exit(0))
 })
 
 app.on('will-quit', () => {

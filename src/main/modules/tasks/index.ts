@@ -1,10 +1,11 @@
 import type { TaskView } from '@shared/tasks'
 import { sqliteToIso } from '@shared/time'
 import { getDb } from '../../db'
-import { broadcastsRepo, postsRepo, postTargetsRepo } from '../../db/repositories'
+import { broadcastsRepo, campaignsRepo, postsRepo, postTargetsRepo } from '../../db/repositories'
 import { AppError } from '../../errors'
 import { createLogger } from '../../logger'
 import { cancelBroadcast } from '../bots/broadcast'
+import { campaignRunner } from '../outreach/campaignRunner'
 import { cancelScheduledOnTelegram, emitPostChanged, rollupStatus } from '../posting/service'
 
 const log = createLogger('tasks')
@@ -22,7 +23,13 @@ const transient = new Map<string, Transient>()
 
 export const taskRegistry = {
   start(kind: Transient['kind'], id: number, title: string): void {
-    transient.set(`${kind}:${id}`, { kind, id, title, startedAt: new Date().toISOString(), progress: null })
+    transient.set(`${kind}:${id}`, {
+      kind,
+      id,
+      title,
+      startedAt: new Date().toISOString(),
+      progress: null
+    })
   },
   progress(kind: Transient['kind'], id: number, done: number, total: number): void {
     const t = transient.get(`${kind}:${id}`)
@@ -88,6 +95,26 @@ export function listTasks(): TaskView[] {
     })
   }
 
+  for (const c of campaignsRepo
+    .list()
+    .filter((c) => c.status === 'running' || c.status === 'paused' || c.status === 'scheduled')) {
+    const processed = c.sent + c.failed + c.skipped
+    out.push({
+      key: `campaign:${c.id}`,
+      kind: 'campaign',
+      id: c.id,
+      title: c.name || c.text.replace(/<[^>]+>/g, '').slice(0, 60) || `Kampaniya #${c.id}`,
+      subtitle:
+        c.status === 'scheduled'
+          ? 'Rejali kampaniya'
+          : `${processed}/${c.total} yuborildi${c.last_error ? ` · ${c.last_error}` : ''}`,
+      status: c.status === 'running' ? 'running' : c.status === 'paused' ? 'paused' : 'scheduled',
+      progress: c.total > 0 ? Math.round((processed / c.total) * 100) : null,
+      at: c.scheduled_at ?? sqliteToIso(c.created_at),
+      stoppable: true
+    })
+  }
+
   return out.sort((a, b) => (a.status === 'running' ? -1 : 1) - (b.status === 'running' ? -1 : 1))
 }
 
@@ -100,6 +127,10 @@ export async function stopTask(key: string): Promise<void> {
     cancelBroadcast(id)
     return
   }
+  if (kind === 'campaign') {
+    campaignRunner.cancel(id)
+    return
+  }
   if (kind === 'post_scheduled') {
     // Telegram'dagi rejali xabarlarni o'chiramiz; post qoralama bo'lib qoladi (qayta rejalash mumkin)
     if (!postsRepo.getById(id)) throw new AppError('NOT_FOUND', 'Post topilmadi.')
@@ -107,7 +138,11 @@ export async function stopTask(key: string): Promise<void> {
     for (const t of postTargetsRepo.listByPost(id)) {
       if (t.status === 'scheduled') postTargetsRepo.markScheduled(t.id, null, t.scheduled_at ?? '')
     }
-    getDb().prepare(`UPDATE post_targets SET status = 'pending', tg_message_id = NULL WHERE post_id = ? AND status = 'scheduled'`).run(id)
+    getDb()
+      .prepare(
+        `UPDATE post_targets SET status = 'pending', tg_message_id = NULL WHERE post_id = ? AND status = 'scheduled'`
+      )
+      .run(id)
     rollupStatus(id)
     emitPostChanged(id)
     log.info(`Rejali post ${id} bekor qilindi (qoralamaga qaytdi)`)

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { IpcChannel, IpcReq } from '@shared/ipc'
+import { CAMPAIGN_BOUNDS } from '@shared/outreach'
 
 /**
  * Har bir IPC kanali uchun kirish sxemasi. Renderer (yoki unga kirib olgan kod) yuborgan
@@ -43,7 +44,9 @@ export const ipcSchemas = {
   'accounts:cancelLogin': z.void(),
   'accounts:logout': z.object({ id }),
   'accounts:remove': z.object({ id }),
-  'accounts:importSessions': z.object({ sessions: z.array(z.string().min(1).max(2000)).min(1).max(50) }),
+  'accounts:importSessions': z.object({
+    sessions: z.array(z.string().min(1).max(2000)).min(1).max(50)
+  }),
   'accounts:importFiles': z.void(),
   'accounts:exportSessions': z.object({ ids: z.array(id).min(1).max(200) }),
   'accounts:spamCheck': z.object({ id }),
@@ -142,23 +145,63 @@ export const ipcSchemas = {
   'backup:export': z.void(),
   'backup:import': z.void(),
 
-  'chats:dialogs': z.object({ accountId: id, offsetDate: z.number().int().nonnegative().optional() }),
-  'chats:messages': z.object({ accountId: id, peer: peerKey, offsetId: z.number().int().nonnegative().optional() }),
-  'chats:send': z.object({ accountId: id, peer: peerKey, text: shortText(4096), filePath: z.string().min(1).max(4096).optional() }),
+  'chats:dialogs': z.object({
+    accountId: id,
+    offsetDate: z.number().int().nonnegative().optional()
+  }),
+  'chats:messages': z.object({
+    accountId: id,
+    peer: peerKey,
+    offsetId: z.number().int().nonnegative().optional()
+  }),
+  'chats:send': z.object({
+    accountId: id,
+    peer: peerKey,
+    text: shortText(4096),
+    filePath: z.string().min(1).max(4096).optional()
+  }),
   'chats:markRead': z.object({ accountId: id, peer: peerKey }),
   'chats:avatar': z.object({ accountId: id, peer: peerKey }),
   'chats:thumb': z.object({ accountId: id, peer: peerKey, msgId: id }),
   'chats:download': z.object({ accountId: id, peer: peerKey, msgId: id }),
 
   'tags:list': z.void(),
-  'tags:create': z.object({ name: shortText(40).min(1), color: z.string().regex(/^#[0-9a-fA-F]{6}$/) }),
-  'tags:update': z.object({ id, name: shortText(40).min(1).optional(), color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional() }),
+  'tags:create': z.object({
+    name: shortText(40).min(1),
+    color: z.string().regex(/^#[0-9a-fA-F]{6}$/)
+  }),
+  'tags:update': z.object({
+    id,
+    name: shortText(40).min(1).optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .optional()
+  }),
   'tags:delete': z.object({ id }),
   'contacts:get': z.object({ accountId: id, peer: peerKey }),
-  'contacts:setTags': z.object({ accountId: id, peer: peerKey, title: shortText(200), username: shortText(64).nullable(), kind: shortText(16), tagIds: z.array(id).max(50) }),
-  'contacts:setNote': z.object({ accountId: id, peer: peerKey, title: shortText(200), username: shortText(64).nullable(), kind: shortText(16), note: shortText(4000) }),
+  'contacts:setTags': z.object({
+    accountId: id,
+    peer: peerKey,
+    title: shortText(200),
+    username: shortText(64).nullable(),
+    kind: shortText(16),
+    tagIds: z.array(id).max(50)
+  }),
+  'contacts:setNote': z.object({
+    accountId: id,
+    peer: peerKey,
+    title: shortText(200),
+    username: shortText(64).nullable(),
+    kind: shortText(16),
+    note: shortText(4000)
+  }),
   'contacts:tagMap': z.object({ accountId: id }),
-  'contacts:list': z.object({ accountId: optionalId, tagId: optionalId, search: shortText(100).optional() }),
+  'contacts:list': z.object({
+    accountId: optionalId,
+    tagId: optionalId,
+    search: shortText(100).optional()
+  }),
   'subscribers:setTags': z.object({ id, tags: z.array(shortText(32)).max(30) }),
   'stats:overview': z.object({ days: z.number().int().min(7).max(365) }),
   'stats:channelViews': z.void(),
@@ -177,7 +220,72 @@ export const ipcSchemas = {
         password: shortText(200)
       })
       .optional()
-  })
+  }),
+
+  'templates:list': z.void(),
+  'templates:save': z.object({
+    id: optionalId,
+    name: shortText(100).min(1),
+    text: shortText(8192),
+    media: mediaItem.nullable(),
+    buttons: buttonRows
+  }),
+  'templates:delete': z.object({ id }),
+
+  'blacklist:list': z.object({ search: shortText(100).optional() }),
+  'blacklist:add': z.object({
+    tgUserId: z.string().regex(/^u?\d{1,20}$/),
+    username: shortText(64).nullable(),
+    title: shortText(200),
+    reason: shortText(500)
+  }),
+  'blacklist:remove': z.object({ id }),
+
+  'campaigns:list': z.object({ accountId: optionalId }),
+  'campaigns:get': z.object({ id }),
+  'campaigns:save': z.object({
+    id: optionalId,
+    name: shortText(200),
+    accountId: id,
+    text: shortText(4096),
+    media: mediaItem.nullable(),
+    settings: z.object({
+      delayMin: z.number().int().min(CAMPAIGN_BOUNDS.delayMinFloor).max(CAMPAIGN_BOUNDS.delayMax),
+      delayMax: z.number().int().min(CAMPAIGN_BOUNDS.delayMinFloor).max(CAMPAIGN_BOUNDS.delayMax),
+      groupSize: z.number().int().min(1).max(CAMPAIGN_BOUNDS.groupSizeMax),
+      groupPauseMin: z.number().int().min(0).max(CAMPAIGN_BOUNDS.groupPauseMax),
+      groupPauseMax: z.number().int().min(0).max(CAMPAIGN_BOUNDS.groupPauseMax),
+      onlyNew: z.boolean(),
+      dailyLimit: z.number().int().min(1).max(CAMPAIGN_BOUNDS.dailyLimitMax)
+    }),
+    recipients: z
+      .array(
+        z.object({
+          peer: z.string().regex(/^u\d{1,20}$/),
+          title: shortText(200),
+          username: shortText(64).nullable()
+        })
+      )
+      .max(CAMPAIGN_BOUNDS.recipientsMax),
+    scheduledAt: isoDate.nullable()
+  }),
+  'campaigns:start': z.object({ id }),
+  'campaigns:pause': z.object({ id }),
+  'campaigns:resume': z.object({ id }),
+  'campaigns:cancel': z.object({ id }),
+  'campaigns:delete': z.object({ id }),
+  'campaigns:quota': z.object({ accountId: id }),
+
+  'apiServer:status': z.void(),
+  'apiServer:configure': z.object({
+    enabled: z.boolean().optional(),
+    port: z.number().int().min(1024).max(65535).optional(),
+    dailyLimit: z.number().int().min(1).max(CAMPAIGN_BOUNDS.dailyLimitMax).optional()
+  }),
+  'apiServer:regenerateKey': z.void(),
+
+  'profile:get': z.void(),
+  'profile:set': z.object({ name: shortText(100), email: shortText(200), phone: shortText(32) })
 } satisfies { [C in IpcChannel]: z.ZodType<IpcReq<C>, z.ZodTypeDef, unknown> }
 
 export type IpcSchemas = typeof ipcSchemas

@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Ban, FileText, Loader2, Pause, Play, Plus, Send, Trash2, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Ban,
+  FileText,
+  Loader2,
+  Pause,
+  Play,
+  Plus,
+  Send,
+  Trash2,
+  X
+} from 'lucide-react'
 import type { BroadcastReport, BroadcastView } from '@shared/ipc'
 import type { BroadcastStatus, MediaItem, UrlButton } from '@shared/types'
 import { LIMITS, mediaUrl } from '@shared/media'
@@ -12,6 +23,7 @@ import { useBots } from '@renderer/store/bots'
 import { useBroadcasts } from '@renderer/store/broadcasts'
 import { usePosts } from '@renderer/store/posts'
 import ButtonsEditor from './ButtonsEditor'
+import TemplatePicker from '@renderer/components/outreach/TemplatePicker'
 
 const STATUS_LABEL: Record<BroadcastStatus, string> = {
   draft: 'Qoralama',
@@ -58,7 +70,8 @@ export default function BroadcastPanel({ botId }: { botId: number }) {
     <div className="p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Faqat /start bosgan va /stop qilmagan obunachilarga. Soniyasiga 20 tadan oshmaydi, bloklaganlar avtomatik chiqariladi.
+          Faqat /start bosgan va /stop qilmagan obunachilarga. Soniyasiga 20 tadan oshmaydi,
+          bloklaganlar avtomatik chiqariladi.
         </p>
         <button
           type="button"
@@ -69,11 +82,17 @@ export default function BroadcastPanel({ botId }: { botId: number }) {
         </button>
       </div>
 
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
+      {error && (
+        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       {!loaded && <div className="py-6 text-center text-xs text-slate-400">Yuklanmoqda…</div>}
       {loaded && list.length === 0 && (
-        <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">Hali rassilka yo'q.</div>
+        <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 dark:border-slate-700">
+          Hali rassilka yo'q.
+        </div>
       )}
 
       <div className="space-y-2">
@@ -84,15 +103,22 @@ export default function BroadcastPanel({ botId }: { botId: number }) {
             timezone={timezone}
             onPause={() => act(() => pause(b.id))}
             onResume={() => act(() => resume(b.id))}
-            onCancel={() => window.confirm('Rassilkani bekor qilasizmi? Yuborilganlar qaytarilmaydi.') && act(() => cancel(b.id))}
-            onDelete={() => window.confirm("Rassilka tarixini o'chirasizmi?") && act(() => remove(b.id))}
+            onCancel={() =>
+              window.confirm('Rassilkani bekor qilasizmi? Yuborilganlar qaytarilmaydi.') &&
+              act(() => cancel(b.id))
+            }
+            onDelete={() =>
+              window.confirm("Rassilka tarixini o'chirasizmi?") && act(() => remove(b.id))
+            }
             onReport={() => setReportId(b.id)}
           />
         ))}
       </div>
 
       {creating && <BroadcastForm botId={botId} onClose={() => setCreating(false)} />}
-      {reportId !== null && <ReportModal id={reportId} timezone={timezone} onClose={() => setReportId(null)} />}
+      {reportId !== null && (
+        <ReportModal id={reportId} timezone={timezone} onClose={() => setReportId(null)} />
+      )}
     </div>
   )
 }
@@ -117,23 +143,37 @@ function BroadcastRow({
   const processed = b.sent + b.failed
   const pct = b.total > 0 ? Math.round((processed / b.total) * 100) : 0
   const active = b.status === 'running' || b.status === 'paused' || b.status === 'scheduled'
-  const when = b.scheduled_at && b.status === 'scheduled' ? `Reja: ${formatInTz(b.scheduled_at, timezone)}` : formatInTz(sqliteToIso(b.created_at), timezone)
+  const when =
+    b.scheduled_at && b.status === 'scheduled'
+      ? `Reja: ${formatInTz(b.scheduled_at, timezone)}`
+      : formatInTz(sqliteToIso(b.created_at), timezone)
 
   return (
     <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-800">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_CLS[b.status]}`}>{STATUS_LABEL[b.status]}</span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${STATUS_CLS[b.status]}`}
+            >
+              {STATUS_LABEL[b.status]}
+            </span>
             <span className="text-xs text-slate-500">{when}</span>
-            {b.tag_filter && <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[11px] text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">teg: {b.tag_filter}</span>}
+            {b.tag_filter && (
+              <span className="rounded bg-brand-50 px-1.5 py-0.5 text-[11px] text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                teg: {b.tag_filter}
+              </span>
+            )}
             {b.media_json && <FileText size={12} className="text-slate-400" />}
           </div>
           <p className="mt-1 truncate text-sm">{stripTags(b.text, 100) || '(media)'}</p>
 
           <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
             <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-              <div className={`h-full transition-all ${b.status === 'running' ? 'bg-brand-500' : b.failed > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`} style={{ width: `${pct}%` }} />
+              <div
+                className={`h-full transition-all ${b.status === 'running' ? 'bg-brand-500' : b.failed > 0 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                style={{ width: `${pct}%` }}
+              />
             </div>
             <span className="shrink-0 tabular-nums">
               {processed}/{b.total} · <span className="text-emerald-600">{b.sent} ✓</span>
@@ -150,7 +190,9 @@ function BroadcastRow({
 
         <div className="flex shrink-0 items-center gap-0.5">
           {b.status === 'running' && <Action icon={Pause} title="Pauza" onClick={onPause} />}
-          {b.status === 'paused' && <Action icon={Play} title="Davom ettirish" onClick={onResume} />}
+          {b.status === 'paused' && (
+            <Action icon={Play} title="Davom ettirish" onClick={onResume} />
+          )}
           {active && <Action icon={Ban} title="Bekor qilish" onClick={onCancel} danger />}
           {b.failed > 0 && <Action icon={AlertTriangle} title="Hisobot" onClick={onReport} />}
           {!active && <Action icon={Trash2} title="O'chirish" onClick={onDelete} danger />}
@@ -160,7 +202,17 @@ function BroadcastRow({
   )
 }
 
-function Action({ icon: Icon, title, onClick, danger }: { icon: typeof Play; title: string; onClick: () => void; danger?: boolean }) {
+function Action({
+  icon: Icon,
+  title,
+  onClick,
+  danger
+}: {
+  icon: typeof Play
+  title: string
+  onClick: () => void
+  danger?: boolean
+}) {
   return (
     <button
       type="button"
@@ -189,11 +241,16 @@ function BroadcastForm({ botId, onClose }: { botId: number; onClose: () => void 
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.subscribers.count(botId, tag || null).then(setAudience).catch(() => setAudience(null))
+    api.subscribers
+      .count(botId, tag || null)
+      .then(setAudience)
+      .catch(() => setAudience(null))
   }, [botId, tag])
 
   useEffect(() => {
-    api.settings.get(['broadcast.footer_enabled']).then((v) => setFooter(v['broadcast.footer_enabled'] === '1'))
+    api.settings
+      .get(['broadcast.footer_enabled'])
+      .then((v) => setFooter(v['broadcast.footer_enabled'] === '1'))
   }, [])
 
   const maxLen = media ? LIMITS.captionMax : LIMITS.textMax
@@ -224,7 +281,14 @@ function BroadcastForm({ botId, onClose }: { botId: number; onClose: () => void 
     setError(null)
     try {
       await api.settings.set({ 'broadcast.footer_enabled': footer ? '1' : '' })
-      await create({ bot_id: botId, text, media, buttons, tag_filter: tag || null, scheduledAt: scheduledIso })
+      await create({
+        bot_id: botId,
+        text,
+        media,
+        buttons,
+        tag_filter: tag || null,
+        scheduledAt: scheduledIso
+      })
       onClose()
     } catch (err) {
       setError(describeError(err).message)
@@ -247,18 +311,35 @@ function BroadcastForm({ botId, onClose }: { botId: number; onClose: () => void 
                 </option>
               ))}
             </select>
-            <span className="shrink-0 text-sm text-slate-500">{audience === null ? '…' : `${audience} ta`}</span>
+            <span className="shrink-0 text-sm text-slate-500">
+              {audience === null ? '…' : `${audience} ta`}
+            </span>
           </div>
         </div>
 
         <label className="block">
           <div className="mb-1 flex items-center justify-between">
             <span className="text-sm font-medium">Matn</span>
-            <span className={`text-xs ${len > maxLen ? 'text-red-600' : 'text-slate-400'}`}>
-              {len}/{maxLen}
+            <span className="flex items-center gap-2">
+              <TemplatePicker
+                onPick={(t) => {
+                  setText(t.text)
+                  if (t.media) setMedia(t.media)
+                  if (t.buttons.length) setButtons(t.buttons)
+                }}
+              />
+              <span className={`text-xs ${len > maxLen ? 'text-red-600' : 'text-slate-400'}`}>
+                {len}/{maxLen}
+              </span>
             </span>
           </div>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={5} placeholder="Telegram HTML: <b>qalin</b>, <i>kursiv</i>, <a href=&quot;https://…&quot;>havola</a>" className={`${inputCls} resize-y`} />
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={5}
+            placeholder='Telegram HTML: <b>qalin</b>, <i>kursiv</i>, <a href="https://…">havola</a>'
+            className={`${inputCls} resize-y`}
+          />
         </label>
 
         <div>
@@ -272,13 +353,24 @@ function BroadcastForm({ botId, onClose }: { botId: number; onClose: () => void 
                   <FileText size={16} />
                 </div>
               )}
-              <span className="min-w-0 flex-1 truncate text-xs">{media.path.split(/[\\/]/).pop()}</span>
-              <button type="button" onClick={() => setMedia(null)} className="text-slate-400 hover:text-red-600" aria-label="Olib tashlash">
+              <span className="min-w-0 flex-1 truncate text-xs">
+                {media.path.split(/[\\/]/).pop()}
+              </span>
+              <button
+                type="button"
+                onClick={() => setMedia(null)}
+                className="text-slate-400 hover:text-red-600"
+                aria-label="Olib tashlash"
+              >
                 <X size={14} />
               </button>
             </div>
           ) : (
-            <button type="button" onClick={pick} className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500 hover:border-brand-400 hover:text-brand-600 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={pick}
+              className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500 hover:border-brand-400 hover:text-brand-600 dark:border-slate-700"
+            >
               + Rasm / video / fayl tanlash
             </button>
           )}
@@ -289,28 +381,59 @@ function BroadcastForm({ botId, onClose }: { botId: number; onClose: () => void 
         <div className="space-y-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
           <div className="flex flex-wrap items-center gap-4 text-sm">
             <label className="inline-flex items-center gap-1.5">
-              <input type="radio" checked={!schedule} onChange={() => setSchedule(false)} className="accent-brand-500" /> Hozir
+              <input
+                type="radio"
+                checked={!schedule}
+                onChange={() => setSchedule(false)}
+                className="accent-brand-500"
+              />{' '}
+              Hozir
             </label>
             <label className="inline-flex items-center gap-1.5">
-              <input type="radio" checked={schedule} onChange={() => setSchedule(true)} className="accent-brand-500" /> Rejali
+              <input
+                type="radio"
+                checked={schedule}
+                onChange={() => setSchedule(true)}
+                className="accent-brand-500"
+              />{' '}
+              Rejali
             </label>
             {schedule && (
               <>
-                <input type="datetime-local" value={wall} onChange={(e) => setWall(e.target.value)} className={`${inputCls} w-auto py-1`} />
+                <input
+                  type="datetime-local"
+                  value={wall}
+                  onChange={(e) => setWall(e.target.value)}
+                  className={`${inputCls} w-auto py-1`}
+                />
                 <span className="text-xs text-slate-500">{timezone}</span>
               </>
             )}
           </div>
           <label className="inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={footer} onChange={(e) => setFooter(e.target.checked)} className="accent-brand-500" />
+            <input
+              type="checkbox"
+              checked={footer}
+              onChange={(e) => setFooter(e.target.checked)}
+              className="accent-brand-500"
+            />
             Xabar oxiriga "Obunadan chiqish: /stop" qatorini qo'shish
           </label>
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
+        {error && (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
+            {error}
+          </p>
+        )}
 
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} disabled={busy} className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
             Bekor
           </button>
           <button
@@ -327,7 +450,15 @@ function BroadcastForm({ botId, onClose }: { botId: number; onClose: () => void 
   )
 }
 
-function ReportModal({ id, timezone, onClose }: { id: number; timezone: string; onClose: () => void }) {
+function ReportModal({
+  id,
+  timezone,
+  onClose
+}: {
+  id: number
+  timezone: string
+  onClose: () => void
+}) {
   const report = useBroadcasts((s) => s.report)
   const [data, setData] = useState<BroadcastReport | null>(null)
   useEffect(() => {
@@ -342,18 +473,31 @@ function ReportModal({ id, timezone, onClose }: { id: number; timezone: string; 
         <div className="space-y-3 text-sm">
           <div className="grid grid-cols-3 gap-2 text-center">
             <Stat label="Yetkazildi" value={data.broadcast.sent} cls="text-emerald-600" />
-            <Stat label="Xato" value={data.broadcast.failed - data.broadcast.blocked} cls="text-red-600" />
+            <Stat
+              label="Xato"
+              value={data.broadcast.failed - data.broadcast.blocked}
+              cls="text-red-600"
+            />
             <Stat label="Bloklagan" value={data.broadcast.blocked} cls="text-slate-500" />
           </div>
           {data.problems.length > 0 && (
             <div className="max-h-72 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-800">
               {data.problems.map((p) => (
-                <div key={p.subscriber_id} className="border-b border-slate-100 px-3 py-2 text-xs last:border-0 dark:border-slate-800">
+                <div
+                  key={p.subscriber_id}
+                  className="border-b border-slate-100 px-3 py-2 text-xs last:border-0 dark:border-slate-800"
+                >
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{p.first_name || p.username || p.tg_user_id}</span>
-                    <span className="text-slate-400">{formatInTz(sqliteToIso(p.sent_at), timezone)}</span>
+                    <span className="font-medium">
+                      {p.first_name || p.username || p.tg_user_id}
+                    </span>
+                    <span className="text-slate-400">
+                      {formatInTz(sqliteToIso(p.sent_at), timezone)}
+                    </span>
                   </div>
-                  <div className={p.status === 'blocked' ? 'text-slate-500' : 'text-red-600'}>{p.error}</div>
+                  <div className={p.status === 'blocked' ? 'text-slate-500' : 'text-red-600'}>
+                    {p.error}
+                  </div>
                 </div>
               ))}
             </div>

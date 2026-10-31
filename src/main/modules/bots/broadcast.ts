@@ -3,6 +3,7 @@ import type { BroadcastInput, BroadcastReport, BroadcastView } from '@shared/ipc
 import type { Broadcast, BotSubscriber, MediaItem, UrlButton } from '@shared/types'
 import { LIMITS } from '@shared/media'
 import {
+  blacklistRepo,
   botsRepo,
   botSubscribersRepo,
   broadcastDeliveriesRepo,
@@ -62,7 +63,12 @@ class BroadcastRunner {
   private tick(): void {
     const now = Date.now()
     for (const b of broadcastsRepo.listResumable()) {
-      if (b.status === 'scheduled' && b.scheduled_at && Date.parse(b.scheduled_at) <= now && !this.running.has(b.id)) {
+      if (
+        b.status === 'scheduled' &&
+        b.scheduled_at &&
+        Date.parse(b.scheduled_at) <= now &&
+        !this.running.has(b.id)
+      ) {
         log.info(`Rassilka ${b.id}: rejali vaqt keldi`)
         this.run(b.id).catch((e) => log.error(`Rassilka ${b.id} boshlanmadi`, e))
       }
@@ -104,7 +110,10 @@ class BroadcastRunner {
     const control: Control = { pause: false, cancel: false }
     this.running.set(id, control)
 
-    const audience = botSubscribersRepo.listActiveForBroadcast(b.bot_id, b.tag_filter)
+    const black = blacklistRepo.idSet()
+    const audience = botSubscribersRepo
+      .listActiveForBroadcast(b.bot_id, b.tag_filter)
+      .filter((s) => !black.has(s.tg_user_id))
     const done = broadcastDeliveriesRepo.processedSubscriberIds(id)
     const todo = audience.filter((s) => !done.has(s.id))
     try {
@@ -118,7 +127,9 @@ class BroadcastRunner {
     broadcastsRepo.setTotal(id, audience.length)
     broadcastsRepo.setStatus(id, 'running')
     this.emitView(id)
-    log.info(`Rassilka ${id} (@${botsRepo.getById(b.bot_id)?.username}): ${todo.length}/${audience.length} ta qoldi`)
+    log.info(
+      `Rassilka ${id} (@${botsRepo.getById(b.bot_id)?.username}): ${todo.length}/${audience.length} ta qoldi`
+    )
 
     const payload = this.buildPayload(b)
     let lastEmit = 0
@@ -148,7 +159,9 @@ class BroadcastRunner {
       broadcastsRepo.setStatus(id, 'done')
     }
     const v = this.emitView(id)
-    log.info(`Rassilka ${id}: ${v.status}, yuborildi ${v.sent}, xato ${v.failed}, bloklagan ${v.blocked}`)
+    log.info(
+      `Rassilka ${id}: ${v.status}, yuborildi ${v.sent}, xato ${v.failed}, bloklagan ${v.blocked}`
+    )
   }
 
   private buildPayload(b: Broadcast) {
@@ -172,12 +185,19 @@ class BroadcastRunner {
       try {
         if (p.media) {
           const file = new InputFile(p.media.path)
-          const opts = { caption: p.text || undefined, parse_mode: 'HTML' as const, reply_markup: p.reply_markup }
+          const opts = {
+            caption: p.text || undefined,
+            parse_mode: 'HTML' as const,
+            reply_markup: p.reply_markup
+          }
           if (p.media.kind === 'photo') await api.sendPhoto(chatId, file, opts)
           else if (p.media.kind === 'video') await api.sendVideo(chatId, file, opts)
           else await api.sendDocument(chatId, file, opts)
         } else {
-          await api.sendMessage(chatId, p.text, { parse_mode: 'HTML', reply_markup: p.reply_markup })
+          await api.sendMessage(chatId, p.text, {
+            parse_mode: 'HTML',
+            reply_markup: p.reply_markup
+          })
         }
         broadcastDeliveriesRepo.record(broadcastId, sub.id, 'sent')
         broadcastsRepo.incrementProgress(broadcastId, 1, 0)
@@ -186,7 +206,12 @@ class BroadcastRunner {
         if (isBlockedError(e)) {
           // Bot bloklangan/o'chirilgan — obunadan chiqaramiz, boshqa urinmaymiz
           botSubscribersRepo.unsubscribe(sub.bot_id, sub.tg_user_id)
-          broadcastDeliveriesRepo.record(broadcastId, sub.id, 'blocked', 'Foydalanuvchi botni bloklagan')
+          broadcastDeliveriesRepo.record(
+            broadcastId,
+            sub.id,
+            'blocked',
+            'Foydalanuvchi botni bloklagan'
+          )
           broadcastsRepo.incrementProgress(broadcastId, 0, 1)
           emit('subscribers:changed', { botId: sub.bot_id })
           return
@@ -239,19 +264,28 @@ export async function createBroadcast(input: BroadcastInput): Promise<BroadcastV
   const text = input.text.trim()
   if (!text && !input.media) throw new AppError('BROADCAST_EMPTY', 'Matn yoki media kiriting.')
   const max = input.media ? LIMITS.captionMax : LIMITS.textMax
-  if (text.length > max) throw new AppError('TEXT_TOO_LONG', `Matn ${max} belgidan oshmasligi kerak (hozir ${text.length}).`)
+  if (text.length > max)
+    throw new AppError(
+      'TEXT_TOO_LONG',
+      `Matn ${max} belgidan oshmasligi kerak (hozir ${text.length}).`
+    )
   for (const row of input.buttons) {
     for (const btn of row as UrlButton[]) {
       if (!btn.text.trim()) throw new AppError('BUTTON_TEXT_EMPTY', "Tugma matni bo'sh.")
-      if (!/^(https?:\/\/|tg:\/\/)/i.test(btn.url.trim())) throw new AppError('BUTTON_URL_INVALID', `Tugma havolasi noto'g'ri: "${btn.url}"`)
+      if (!/^(https?:\/\/|tg:\/\/)/i.test(btn.url.trim()))
+        throw new AppError('BUTTON_URL_INVALID', `Tugma havolasi noto'g'ri: "${btn.url}"`)
     }
   }
   if (input.scheduledAt) {
     const at = Date.parse(input.scheduledAt)
     if (Number.isNaN(at)) throw new AppError('SCHEDULE_INVALID', "Vaqt noto'g'ri.")
-    if (at - Date.now() < LIMITS.scheduleMinSec * 1000) throw new AppError('SCHEDULE_TOO_SOON', "Vaqt kamida 1 daqiqa keyin bo'lishi kerak.")
+    if (at - Date.now() < LIMITS.scheduleMinSec * 1000)
+      throw new AppError('SCHEDULE_TOO_SOON', "Vaqt kamida 1 daqiqa keyin bo'lishi kerak.")
   }
-  const audience = botSubscribersRepo.listActiveForBroadcast(input.bot_id, input.tag_filter || null).length
+  const audience = botSubscribersRepo.listActiveForBroadcast(
+    input.bot_id,
+    input.tag_filter || null
+  ).length
   if (audience === 0) throw new AppError('NO_AUDIENCE', "Bu botda faol obunachi yo'q.")
   assertCanSend(audience)
   if (!input.scheduledAt) botManager.getBot(input.bot_id) // bot o'chiq bo'lsa darhol xato
@@ -277,7 +311,7 @@ export async function createBroadcast(input: BroadcastInput): Promise<BroadcastV
 export function pauseBroadcast(id: number): BroadcastView {
   const b = broadcastsRepo.getById(id)
   if (!b) throw new AppError('NOT_FOUND', 'Rassilka topilmadi.')
-  if (b.status !== 'running') throw new AppError('BROADCAST_NOT_RUNNING', "Rassilka ishlamayapti.")
+  if (b.status !== 'running') throw new AppError('BROADCAST_NOT_RUNNING', 'Rassilka ishlamayapti.')
   broadcastRunner.pause(id)
   return toBroadcastView(broadcastsRepo.getById(id)!)
 }
@@ -285,7 +319,8 @@ export function pauseBroadcast(id: number): BroadcastView {
 export async function resumeBroadcast(id: number): Promise<BroadcastView> {
   const b = broadcastsRepo.getById(id)
   if (!b) throw new AppError('NOT_FOUND', 'Rassilka topilmadi.')
-  if (b.status !== 'paused') throw new AppError('BROADCAST_NOT_PAUSED', "Faqat pauzadagi rassilkani davom ettirish mumkin.")
+  if (b.status !== 'paused')
+    throw new AppError('BROADCAST_NOT_PAUSED', 'Faqat pauzadagi rassilkani davom ettirish mumkin.')
   botManager.getBot(b.bot_id)
   broadcastRunner.run(id).catch((e) => log.error(`Rassilka ${id} davom etmadi`, e))
   await sleep(50)
@@ -308,7 +343,10 @@ export function deleteBroadcast(id: number): void {
   const b = broadcastsRepo.getById(id)
   if (!b) return
   if (b.status === 'running' || broadcastRunner.isActive(id)) {
-    throw new AppError('BROADCAST_RUNNING', "Ishlayotgan rassilkani o'chirib bo'lmaydi — avval bekor qiling.")
+    throw new AppError(
+      'BROADCAST_RUNNING',
+      "Ishlayotgan rassilkani o'chirib bo'lmaydi — avval bekor qiling."
+    )
   }
   broadcastsRepo.remove(id)
 }

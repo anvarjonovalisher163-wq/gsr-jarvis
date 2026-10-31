@@ -1,6 +1,6 @@
 import { type Bot, type Context, InlineKeyboard, InputFile } from 'grammy'
 import type { BotRule, MediaItem, UrlButton } from '@shared/types'
-import { botRulesRepo, botSubscribersRepo } from '../../db/repositories'
+import { blacklistRepo, botRulesRepo, botSubscribersRepo } from '../../db/repositories'
 import { broadcast } from '../../events'
 import { createLogger } from '../../logger'
 import { isBlockedError } from './errors'
@@ -13,7 +13,10 @@ export const DEFAULT_GOODBYE = "Siz obunadan chiqdingiz. Qayta obuna bo'lish uch
 
 /** Deep-link parametri teg sifatida: faqat harf/raqam/_/-, 32 belgigacha. */
 function sanitizeTag(raw: string | undefined): string | null {
-  const t = (raw ?? '').trim().replace(/[^\w-]/g, '').slice(0, 32)
+  const t = (raw ?? '')
+    .trim()
+    .replace(/[^\w-]/g, '')
+    .slice(0, 32)
   return t || null
 }
 
@@ -44,7 +47,9 @@ export function parseButtonsJson(json: string | null): UrlButton[][] {
 
 /** URL tugma qatorlaridan inline klaviatura (bo'sh/noto'g'ri tugmalar tashlab yuboriladi). */
 export function buildKeyboard(rows: UrlButton[][]): InlineKeyboard | undefined {
-  const valid = rows.map((r) => r.filter((b) => b.text && /^(https?:\/\/|tg:\/\/)/i.test(b.url))).filter((r) => r.length)
+  const valid = rows
+    .map((r) => r.filter((b) => b.text && /^(https?:\/\/|tg:\/\/)/i.test(b.url)))
+    .filter((r) => r.length)
   if (!valid.length) return undefined
   const kb = new InlineKeyboard()
   valid.forEach((row, i) => {
@@ -90,10 +95,17 @@ export function matchRule(rules: BotRule[], text: string): BotRule | undefined {
   const lower = t.toLowerCase()
 
   if (t.startsWith('/')) {
-    const cmd = rules.find((r) => r.trigger_type === 'command' && normCommand(r.trigger_value) === firstWord)
+    const cmd = rules.find(
+      (r) => r.trigger_type === 'command' && normCommand(r.trigger_value) === firstWord
+    )
     if (cmd) return cmd
   }
-  const kw = rules.find((r) => r.trigger_type === 'keyword' && r.trigger_value && lower.includes(r.trigger_value.toLowerCase()))
+  const kw = rules.find(
+    (r) =>
+      r.trigger_type === 'keyword' &&
+      r.trigger_value &&
+      lower.includes(r.trigger_value.toLowerCase())
+  )
   if (kw) return kw
   return rules.find((r) => r.trigger_type === 'any')
 }
@@ -102,18 +114,30 @@ export function registerHandlers(bot: Bot, botId: number): void {
   const priv = bot.chatType('private')
   const notify = () => broadcast('subscribers:changed', { botId })
 
+  // Qora ro'yxatdagilarga bot javob bermaydi va ularni obunaga olmaydi
+  priv.use(async (ctx, next) => {
+    if (ctx.from && blacklistRepo.has(String(ctx.from.id))) return
+    await next()
+  })
+
   priv.command('start', async (ctx) => {
     const tag = sanitizeTag(ctx.match)
     botSubscribersRepo.subscribe(
       botId,
-      { tg_user_id: String(ctx.from!.id), username: ctx.from!.username ?? null, first_name: ctx.from!.first_name ?? null },
+      {
+        tg_user_id: String(ctx.from!.id),
+        username: ctx.from!.username ?? null,
+        first_name: ctx.from!.first_name ?? null
+      },
       tag
     )
     notify()
     log.info(`Bot ${botId}: /start ${ctx.from!.id}${tag ? ` (teg: ${tag})` : ''}`)
 
     const rules = botRulesRepo.list(botId, true)
-    const custom = rules.find((r) => r.trigger_type === 'command' && normCommand(r.trigger_value) === 'start')
+    const custom = rules.find(
+      (r) => r.trigger_type === 'command' && normCommand(r.trigger_value) === 'start'
+    )
     if (custom) await sendRuleReply(ctx, custom)
     else await ctx.reply(DEFAULT_WELCOME)
   })

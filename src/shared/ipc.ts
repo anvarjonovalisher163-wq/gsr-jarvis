@@ -89,6 +89,17 @@ import type { LogEntry } from './types'
 import type { DialogsPage, MessageView } from './chats'
 import type { Contact, Tag } from './types'
 import type { ChannelViewsReport, StatsOverview } from './stats'
+import type {
+  ApiServerStatus,
+  BlacklistInput,
+  CampaignInput,
+  CampaignReport,
+  CampaignView,
+  TemplateInput,
+  TemplateView,
+  UserProfile
+} from './outreach'
+import type { BlacklistEntry } from './types'
 
 /** Post nishoni (kanal) — kanal ma'lumotlari bilan. */
 export interface TargetView extends PostTarget {
@@ -161,8 +172,7 @@ export interface SpamCheckResult {
 }
 
 export type SignInResult =
-  | { status: 'done'; account: AccountView }
-  | { status: 'password'; hint: string }
+  { status: 'done'; account: AccountView } | { status: 'password'; hint: string }
 
 export interface IpcChannels {
   'app:getVersion': { req: void; res: string }
@@ -268,15 +278,24 @@ export interface IpcChannels {
   'backup:import': { req: void; res: { restarted: boolean } }
 
   'chats:dialogs': { req: { accountId: number; offsetDate?: number }; res: DialogsPage }
-  'chats:messages': { req: { accountId: number; peer: string; offsetId?: number }; res: MessageView[] }
-  'chats:send': { req: { accountId: number; peer: string; text: string; filePath?: string }; res: MessageView }
+  'chats:messages': {
+    req: { accountId: number; peer: string; offsetId?: number }
+    res: MessageView[]
+  }
+  'chats:send': {
+    req: { accountId: number; peer: string; text: string; filePath?: string }
+    res: MessageView
+  }
   'chats:markRead': { req: { accountId: number; peer: string }; res: void }
   /** Dialog avatari (keshlanadi) — URL yoki null */
   'chats:avatar': { req: { accountId: number; peer: string }; res: string | null }
   /** Rasm/video thumbnail (keshlanadi) — tgm-file URL yoki null */
   'chats:thumb': { req: { accountId: number; peer: string; msgId: number }; res: string | null }
   /** Faylni saqlash dialogi bilan yuklab olish */
-  'chats:download': { req: { accountId: number; peer: string; msgId: number }; res: { path: string | null } }
+  'chats:download': {
+    req: { accountId: number; peer: string; msgId: number }
+    res: { path: string | null }
+  }
 
   'tags:list': { req: void; res: Tag[] }
   'tags:create': { req: { name: string; color: string }; res: Tag }
@@ -284,12 +303,38 @@ export interface IpcChannels {
   'tags:delete': { req: { id: number }; res: void }
 
   /** Chat kontakt kartasi (teglar + eslatma). Kontakt yozuvi bo'lmasa bo'sh qaytadi. */
-  'contacts:get': { req: { accountId: number; peer: string }; res: { contact: Contact | null; tagIds: number[] } }
-  'contacts:setTags': { req: { accountId: number; peer: string; title: string; username: string | null; kind: string; tagIds: number[] }; res: void }
-  'contacts:setNote': { req: { accountId: number; peer: string; title: string; username: string | null; kind: string; note: string }; res: void }
+  'contacts:get': {
+    req: { accountId: number; peer: string }
+    res: { contact: Contact | null; tagIds: number[] }
+  }
+  'contacts:setTags': {
+    req: {
+      accountId: number
+      peer: string
+      title: string
+      username: string | null
+      kind: string
+      tagIds: number[]
+    }
+    res: void
+  }
+  'contacts:setNote': {
+    req: {
+      accountId: number
+      peer: string
+      title: string
+      username: string | null
+      kind: string
+      note: string
+    }
+    res: void
+  }
   /** Akkaunt bo'yicha peer → tagIds (dialog ro'yxati filtri uchun) */
   'contacts:tagMap': { req: { accountId: number }; res: Record<string, number[]> }
-  'contacts:list': { req: { accountId?: number; tagId?: number; search?: string }; res: (Contact & { tagIds: number[] })[] }
+  'contacts:list': {
+    req: { accountId?: number; tagId?: number; search?: string }
+    res: (Contact & { tagIds: number[] })[]
+  }
   'subscribers:setTags': { req: { id: number; tags: string[] }; res: void }
 
   'stats:overview': { req: { days: number }; res: StatsOverview }
@@ -298,6 +343,36 @@ export interface IpcChannels {
 
   'app:getSettings': { req: void; res: AppSettings }
   'app:setSettings': { req: Partial<AppSettings>; res: AppSettings }
+
+  'templates:list': { req: void; res: TemplateView[] }
+  'templates:save': { req: TemplateInput; res: TemplateView }
+  'templates:delete': { req: { id: number }; res: void }
+
+  'blacklist:list': { req: { search?: string }; res: BlacklistEntry[] }
+  'blacklist:add': { req: BlacklistInput; res: BlacklistEntry }
+  'blacklist:remove': { req: { id: number }; res: void }
+
+  'campaigns:list': { req: { accountId?: number }; res: CampaignView[] }
+  'campaigns:get': { req: { id: number }; res: CampaignReport }
+  /** Saqlaydi (qoralama yoki rejali). Boshlash — campaigns:start. */
+  'campaigns:save': { req: CampaignInput; res: CampaignView }
+  'campaigns:start': { req: { id: number }; res: CampaignView }
+  'campaigns:pause': { req: { id: number }; res: CampaignView }
+  'campaigns:resume': { req: { id: number }; res: CampaignView }
+  'campaigns:cancel': { req: { id: number }; res: CampaignView }
+  'campaigns:delete': { req: { id: number }; res: void }
+  /** Akkauntning 24 soatlik yuborish hisobi (kampaniya + API) */
+  'campaigns:quota': { req: { accountId: number }; res: { used: number } }
+
+  'apiServer:status': { req: void; res: ApiServerStatus }
+  'apiServer:configure': {
+    req: { enabled?: boolean; port?: number; dailyLimit?: number }
+    res: ApiServerStatus
+  }
+  'apiServer:regenerateKey': { req: void; res: ApiServerStatus }
+
+  'profile:get': { req: void; res: UserProfile }
+  'profile:set': { req: UserProfile; res: UserProfile }
 }
 
 export type IpcChannel = keyof IpcChannels
@@ -318,8 +393,15 @@ export interface IpcEvents {
   'broadcasts:changed': BroadcastView
   'license:changed': LicenseStatus
   'updater:changed': UpdaterStatus
+  'campaigns:changed': CampaignView
+  'apiServer:changed': ApiServerStatus
   /** Yangi xabar (kiruvchi yoki boshqa qurilmadan chiquvchi) */
-  'chats:newMessage': { accountId: number; peer: string; message: MessageView; dialog: DialogsPage['dialogs'][number] | null }
+  'chats:newMessage': {
+    accountId: number
+    peer: string
+    message: MessageView
+    dialog: DialogsPage['dialogs'][number] | null
+  }
 }
 
 export type IpcEvent = keyof IpcEvents
@@ -437,10 +519,28 @@ export interface RendererApi {
   }
   contacts: {
     get: (accountId: number, peer: string) => Promise<{ contact: Contact | null; tagIds: number[] }>
-    setTags: (p: { accountId: number; peer: string; title: string; username: string | null; kind: string; tagIds: number[] }) => Promise<void>
-    setNote: (p: { accountId: number; peer: string; title: string; username: string | null; kind: string; note: string }) => Promise<void>
+    setTags: (p: {
+      accountId: number
+      peer: string
+      title: string
+      username: string | null
+      kind: string
+      tagIds: number[]
+    }) => Promise<void>
+    setNote: (p: {
+      accountId: number
+      peer: string
+      title: string
+      username: string | null
+      kind: string
+      note: string
+    }) => Promise<void>
     tagMap: (accountId: number) => Promise<Record<string, number[]>>
-    list: (f?: { accountId?: number; tagId?: number; search?: string }) => Promise<(Contact & { tagIds: number[] })[]>
+    list: (f?: {
+      accountId?: number
+      tagId?: number
+      search?: string
+    }) => Promise<(Contact & { tagIds: number[] })[]>
   }
   stats: {
     overview: (days: number) => Promise<StatsOverview>
@@ -450,6 +550,40 @@ export interface RendererApi {
     getVersion: () => Promise<string>
     getSettings: () => Promise<AppSettings>
     setSettings: (patch: Partial<AppSettings>) => Promise<AppSettings>
+  }
+  templates: {
+    list: () => Promise<TemplateView[]>
+    save: (input: TemplateInput) => Promise<TemplateView>
+    delete: (id: number) => Promise<void>
+  }
+  blacklist: {
+    list: (search?: string) => Promise<BlacklistEntry[]>
+    add: (input: BlacklistInput) => Promise<BlacklistEntry>
+    remove: (id: number) => Promise<void>
+  }
+  campaigns: {
+    list: (accountId?: number) => Promise<CampaignView[]>
+    get: (id: number) => Promise<CampaignReport>
+    save: (input: CampaignInput) => Promise<CampaignView>
+    start: (id: number) => Promise<CampaignView>
+    pause: (id: number) => Promise<CampaignView>
+    resume: (id: number) => Promise<CampaignView>
+    cancel: (id: number) => Promise<CampaignView>
+    delete: (id: number) => Promise<void>
+    quota: (accountId: number) => Promise<{ used: number }>
+  }
+  apiServer: {
+    status: () => Promise<ApiServerStatus>
+    configure: (patch: {
+      enabled?: boolean
+      port?: number
+      dailyLimit?: number
+    }) => Promise<ApiServerStatus>
+    regenerateKey: () => Promise<ApiServerStatus>
+  }
+  profile: {
+    get: () => Promise<UserProfile>
+    set: (p: UserProfile) => Promise<UserProfile>
   }
   on: <E extends IpcEvent>(event: E, cb: (payload: IpcEventPayload<E>) => void) => () => void
 }

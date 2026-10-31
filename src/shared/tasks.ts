@@ -1,6 +1,6 @@
 /** Vazifalar tabi: barcha fon jarayonlari bitta ro'yxatda. */
 
-export type TaskKind = 'post_scheduled' | 'post_sending' | 'broadcast' | 'channel_sync'
+export type TaskKind = 'post_scheduled' | 'post_sending' | 'broadcast' | 'channel_sync' | 'campaign'
 
 export type TaskStatus = 'scheduled' | 'running' | 'paused' | 'failed'
 

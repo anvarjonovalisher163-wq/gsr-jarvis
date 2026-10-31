@@ -11,8 +11,12 @@ export type ChannelType = 'channel' | 'group'
 export type PostStatus = 'draft' | 'scheduled' | 'sent' | 'failed'
 export type TargetStatus = 'pending' | 'scheduled' | 'sent' | 'failed'
 export type BotRuleTrigger = 'command' | 'keyword' | 'any'
-export type BroadcastStatus = 'draft' | 'scheduled' | 'running' | 'paused' | 'done' | 'cancelled' | 'failed'
+export type BroadcastStatus =
+  'draft' | 'scheduled' | 'running' | 'paused' | 'done' | 'cancelled' | 'failed'
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+export type CampaignStatus =
+  'draft' | 'scheduled' | 'running' | 'paused' | 'done' | 'cancelled' | 'failed'
+export type RecipientStatus = 'pending' | 'sent' | 'failed' | 'skipped'
 
 export interface Account {
   id: number
@@ -143,6 +147,57 @@ export interface ContactTag {
   account_id: number
   peer_id: string
   tag_id: number
+}
+
+/** Tayyor xabar (shablon): matn + media + tugmalar (tugmalar faqat botlarda ishlaydi). */
+export interface Template {
+  id: number
+  name: string
+  text: string
+  media_json: string | null
+  buttons_json: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Qora ro'yxat: bu foydalanuvchilarga kampaniya/API/bot javobi yuborilmaydi. */
+export interface BlacklistEntry {
+  id: number
+  tg_user_id: string
+  username: string | null
+  title: string
+  reason: string
+  created_at: string
+}
+
+/** Akkaunt kampaniyasi: bitta xabar → tanlangan MAVJUD chatlarga, pauzalar bilan. */
+export interface Campaign {
+  id: number
+  name: string
+  account_id: number
+  text: string
+  media_json: string | null
+  settings_json: string
+  status: CampaignStatus
+  total: number
+  sent: number
+  failed: number
+  skipped: number
+  last_error: string | null
+  scheduled_at: string | null
+  created_at: string
+  finished_at: string | null
+}
+
+export interface CampaignRecipient {
+  id: number
+  campaign_id: number
+  peer_id: string
+  title: string
+  username: string | null
+  status: RecipientStatus
+  error: string | null
+  sent_at: string | null
 }
 
 export interface Setting {

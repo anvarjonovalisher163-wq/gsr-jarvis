@@ -44,5 +44,10 @@ export const api: RendererApi = {
   stats: unwrapNamespace(bridge.stats) as RendererApi['stats'],
   logs: unwrapNamespace(bridge.logs) as RendererApi['logs'],
   backup: unwrapNamespace(bridge.backup) as RendererApi['backup'],
+  templates: unwrapNamespace(bridge.templates) as RendererApi['templates'],
+  blacklist: unwrapNamespace(bridge.blacklist) as RendererApi['blacklist'],
+  campaigns: unwrapNamespace(bridge.campaigns) as RendererApi['campaigns'],
+  apiServer: unwrapNamespace(bridge.apiServer) as RendererApi['apiServer'],
+  profile: unwrapNamespace(bridge.profile) as RendererApi['profile'],
   on: bridge.on
 }
