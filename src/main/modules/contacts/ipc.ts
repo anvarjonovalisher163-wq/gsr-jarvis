@@ -1,4 +1,6 @@
+import { BrowserWindow } from 'electron'
 import { handle } from '../../ipc'
+import { importPhoneContacts, listTelegramContacts } from './telegram'
 import { botSubscribersRepo, contactsRepo, tagsRepo } from '../../db/repositories'
 import { AppError } from '../../errors'
 
@@ -43,4 +45,7 @@ export function registerContactsIpc(): void {
   handle('subscribers:setTags', (_e, { id, tags }) => {
     botSubscribersRepo.setTags(id, tags.map((t) => t.trim().replace(/[^\w-]/g, '')).filter(Boolean))
   })
+
+  handle('contacts:importPhones', (e, { accountId }) => importPhoneContacts(accountId, BrowserWindow.fromWebContents(e.sender)))
+  handle('contacts:telegramList', (_e, { accountId }) => listTelegramContacts(accountId))
 }

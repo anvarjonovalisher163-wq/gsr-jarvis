@@ -95,6 +95,8 @@ import type {
   CampaignInput,
   CampaignReport,
   CampaignView,
+  PhoneImportResult,
+  TelegramContact,
   StoryInput,
   StoryResult,
   TemplateInput,
@@ -341,6 +343,10 @@ export interface IpcChannels {
     req: { accountId?: number; tagId?: number; search?: string }
     res: (Contact & { tagIds: number[] })[]
   }
+  /** Telefon kitobini (csv/txt/vcf) Telegram'ga import — fayl dialogi. */
+  'contacts:importPhones': { req: { accountId: number }; res: PhoneImportResult }
+  /** Akkauntning Telegram kontaktlari (mutual belgisi bilan). */
+  'contacts:telegramList': { req: { accountId: number }; res: TelegramContact[] }
   'subscribers:setTags': { req: { id: number; tags: string[] }; res: void }
 
   'stats:overview': { req: { days: number }; res: StatsOverview }
@@ -551,6 +557,8 @@ export interface RendererApi {
       tagId?: number
       search?: string
     }) => Promise<(Contact & { tagIds: number[] })[]>
+    importPhones: (accountId: number) => Promise<PhoneImportResult>
+    telegramList: (accountId: number) => Promise<TelegramContact[]>
   }
   stats: {
     overview: (days: number) => Promise<StatsOverview>

@@ -137,3 +137,21 @@ export interface StoryResult {
   storyId: number | null
   target: string
 }
+
+/** Telegram kontaktlari ro'yxati elementi. */
+export interface TelegramContact {
+  peer: string
+  title: string
+  username: string | null
+  phone: string | null
+  /** U ham sizning raqamingizni saqlagan (o'zaro) — kampaniya faqat shularga */
+  mutual: boolean
+}
+
+export interface PhoneImportResult {
+  total: number
+  imported: number
+  notOnTelegram: number
+  retry: number
+  users: TelegramContact[]
+}

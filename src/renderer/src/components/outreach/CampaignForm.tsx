@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Loader2, Paperclip, RefreshCw, Search, X } from 'lucide-react'
-import type { CampaignSettings, CampaignView, RecipientInput } from '@shared/outreach'
+import type {
+  CampaignSettings,
+  CampaignView,
+  RecipientInput,
+  TelegramContact
+} from '@shared/outreach'
 import { CAMPAIGN_BOUNDS, CAMPAIGN_DEFAULTS } from '@shared/outreach'
 import type { MediaItem } from '@shared/types'
 import { utcToWallTime, wallTimeToUtc } from '@shared/time'
@@ -272,6 +277,20 @@ function RecipientsStep({
   const { tags, maps, loadMap, load: loadTags, loaded: tagsLoaded } = useTags()
   const [search, setSearch] = useState('')
   const [tagId, setTagId] = useState<number | null>(null)
+  const [source, setSource] = useState<'dialogs' | 'contacts'>('dialogs')
+  const [tgContacts, setTgContacts] = useState<TelegramContact[] | null>(null)
+  const [contactsError, setContactsError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setTgContacts(null)
+  }, [accountId])
+  useEffect(() => {
+    if (source !== 'contacts' || tgContacts !== null || !accountId) return
+    api.contacts
+      .telegramList(accountId)
+      .then((l) => setTgContacts(l.filter((c) => c.mutual)))
+      .catch((e) => setContactsError(describeError(e).message))
+  }, [source, tgContacts, accountId])
 
   useEffect(() => {
     if (!accountId) return
@@ -282,19 +301,23 @@ function RecipientsStep({
   }, [accountId])
 
   const tagMap = useMemo(() => maps[accountId] ?? {}, [maps, accountId])
-  const candidates = useMemo(
-    () =>
-      acc.dialogs.filter((d) => {
+  const candidates = useMemo(() => {
+    const q = search.toLowerCase()
+    const match = (title: string, username: string | null) =>
+      !q || title.toLowerCase().includes(q) || (username ?? '').toLowerCase().includes(q)
+    if (source === 'contacts') {
+      return (tgContacts ?? [])
+        .filter((c) => match(c.title, c.username))
+        .map((c) => ({ peer: c.peer, title: c.title, username: c.username }))
+    }
+    return acc.dialogs
+      .filter((d) => {
         if (d.kind !== 'user' || d.isSelf) return false
         if (tagId && !(tagMap[d.peer] ?? []).includes(tagId)) return false
-        if (search) {
-          const q = search.toLowerCase()
-          return d.title.toLowerCase().includes(q) || (d.username ?? '').toLowerCase().includes(q)
-        }
-        return true
-      }),
-    [acc.dialogs, tagId, tagMap, search]
-  )
+        return match(d.title, d.username)
+      })
+      .map((d) => ({ peer: d.peer, title: d.title, username: d.username }))
+  }, [source, tgContacts, acc.dialogs, tagId, tagMap, search])
 
   const toggle = (peer: string, title: string, username: string | null) => {
     const m = new Map(selected)
@@ -313,10 +336,29 @@ function RecipientsStep({
 
   return (
     <div>
+      <div className="mb-2 flex gap-1 text-xs">
+        {(
+          [
+            ['dialogs', 'Chatlarim'],
+            ['contacts', "Telegram kontaktlarim (o'zaro)"]
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setSource(id)}
+            className={`rounded-full px-3 py-1 ${source === id ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <p className="mb-2 text-xs text-slate-500">
-        Faqat shu akkauntning dialoglaridagi odamlar (botlar, guruhlar, kanallar emas). Ro'yxat
-        Chatlar bo'limidagi kabi — kerak bo'lsa "Yana yuklash".
+        {source === 'dialogs'
+          ? 'Faqat shu akkauntning dialoglaridagi odamlar (botlar, guruhlar, kanallar emas). Kerak bo\'lsa "Yana yuklash".'
+          : "Faqat o'zaro kontaktlar — ular ham sizning raqamingizni saqlagan. Bir tomonlama (siz qo'shgan, ular qo'shmagan) kontaktlar ro'yxatga kirmaydi."}
       </p>
+      {contactsError && <p className="mb-2 text-xs text-red-600">{contactsError}</p>}
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <div className="relative min-w-[200px] flex-1">
           <Search

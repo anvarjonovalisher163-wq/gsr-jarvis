@@ -212,6 +212,8 @@ export const ipcSchemas = {
     tagId: optionalId,
     search: shortText(100).optional()
   }),
+  'contacts:importPhones': z.object({ accountId: id }),
+  'contacts:telegramList': z.object({ accountId: id }),
   'subscribers:setTags': z.object({ id, tags: z.array(shortText(32)).max(30) }),
   'stats:overview': z.object({ days: z.number().int().min(7).max(365) }),
   'stats:channelViews': z.void(),

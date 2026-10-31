@@ -36,7 +36,9 @@ const api: BridgeApi = {
     setTags: (p) => invoke('contacts:setTags', p),
     setNote: (p) => invoke('contacts:setNote', p),
     tagMap: (accountId) => invoke('contacts:tagMap', { accountId }),
-    list: (f) => invoke('contacts:list', f ?? {})
+    list: (f) => invoke('contacts:list', f ?? {}),
+    importPhones: (accountId) => invoke('contacts:importPhones', { accountId }),
+    telegramList: (accountId) => invoke('contacts:telegramList', { accountId })
   },
   stats: {
     overview: (days) => invoke('stats:overview', { days }),
