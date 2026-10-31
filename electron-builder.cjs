@@ -93,7 +93,9 @@ module.exports = {
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     shortcutName: 'TG Manager',
-    installerLanguages: ['uz', 'ru_RU', 'en_US'],
+    // NSIS'da o'zbek tili paketi yo'q (LangString xatosi) — rus va ingliz
+    installerLanguages: ['ru_RU', 'en_US'],
+    warningsAsErrors: false,
     deleteAppDataOnUninstall: false
   },
 
