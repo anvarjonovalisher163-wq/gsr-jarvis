@@ -14,6 +14,14 @@ name: Release
 on:
   push:
     tags: ['v*']
+  # Qo'lda: Actions → Release → Run workflow. owner_mode=true bo'lsa litsenziya serversiz
+  # (MAIN_VITE_OWNER_MODE=1) build — fayllar Release'ga emas, Artifacts'ga yuklanadi.
+  workflow_dispatch:
+    inputs:
+      owner_mode:
+        description: "Egasi rejimi (cheksiz, litsenziya serversiz)"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -40,11 +48,15 @@ jobs:
       - name: .env (litsenziya serveri)
         shell: bash
         run: |
-          cat > .env <<EOF
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.owner_mode }}" = "true" ]; then
+            echo "MAIN_VITE_OWNER_MODE=1" > .env
+          else
+            cat > .env <<EOF
           MAIN_VITE_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
           MAIN_VITE_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
           MAIN_VITE_LICENSE_PUBLIC_KEY=${{ secrets.LICENSE_PUBLIC_KEY }}
           EOF
+          fi
           node scripts/check-env.mjs
 
       - run: npm ci
@@ -63,7 +75,7 @@ jobs:
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           # Sertifikat bo'lmasa imzosiz build (xato emas)
           CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
-        run: npx electron-builder ${{ matrix.args }} --publish always
+        run: npx electron-builder ${{ matrix.args }} --publish ${{ github.event_name == 'push' && 'always' || 'never' }}
 
       - uses: actions/upload-artifact@v4
         if: always()
