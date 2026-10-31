@@ -93,7 +93,7 @@ export async function importPhoneContacts(
     return { total: 0, imported: 0, notOnTelegram: 0, retry: 0, users: [] }
   const path = res.filePaths[0]
   const entries = parsePhoneFile(
-    readFileSync(path, 'utf8').replace(/^﻿/, ''),
+    readFileSync(path, 'utf8').replace(/^\uFEFF/, ''),
     extname(path).toLowerCase()
   )
   if (entries.length === 0) throw new AppError('IMPORT_EMPTY', 'Faylda telefon raqam topilmadi.')
