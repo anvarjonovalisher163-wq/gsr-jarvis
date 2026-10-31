@@ -1,6 +1,6 @@
 {
   "name": "tg-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TG Manager — Telegram boshqaruv paneli (desktop)",
   "main": "./out/main/index.js",
   "author": "GSR",

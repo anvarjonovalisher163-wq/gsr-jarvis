@@ -50,7 +50,7 @@ module.exports = {
   // CI: electron-builder har arxitektura uchun native modullarni o'zi rebuild qiladi (mac: arm64+x64
   // bitta chaqiruvda — latest-mac.yml ikkala archni o'z ichiga olishi uchun).
   // Lokal build (scripts/pack.mjs) -c.npmRebuild=false beradi: postinstall yuklagan host-arch binar ishlatiladi.
-  npmRebuild: true,
+  npmRebuild: false,
 
   // Tray ikonkasi uchun (process.resourcesPath/icon.png)
   extraResources: [{ from: 'resources/icon.png', to: 'icon.png' }],
