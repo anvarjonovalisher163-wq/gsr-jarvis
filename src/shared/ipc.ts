@@ -300,6 +300,8 @@ export interface IpcChannels {
   /** Rasm/video thumbnail (keshlanadi) — tgm-file URL yoki null */
   'chats:thumb': { req: { accountId: number; peer: string; msgId: number }; res: string | null }
   /** Faylni saqlash dialogi bilan yuklab olish */
+  /** @username yoki +telefon bo'yicha Telegram'dan topib dialog sifatida qaytaradi (chat ochish uchun). */
+  'chats:resolve': { req: { accountId: number; query: string }; res: DialogsPage['dialogs'][number] }
   'chats:download': {
     req: { accountId: number; peer: string; msgId: number }
     res: { path: string | null }
@@ -526,6 +528,7 @@ export interface RendererApi {
     avatar: (accountId: number, peer: string) => Promise<string | null>
     thumb: (accountId: number, peer: string, msgId: number) => Promise<string | null>
     download: (accountId: number, peer: string, msgId: number) => Promise<{ path: string | null }>
+    resolve: (accountId: number, query: string) => Promise<DialogsPage['dialogs'][number]>
   }
   tags: {
     list: () => Promise<Tag[]>

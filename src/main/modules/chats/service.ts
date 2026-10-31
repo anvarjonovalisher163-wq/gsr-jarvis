@@ -15,7 +15,15 @@ import { avatarUrl, downloadAvatar } from '../accounts/avatars'
 import { clientManager } from '../accounts/clientManager'
 import { mapTelegramError } from '../accounts/errors'
 import { allowMediaPaths, isAllowedMediaPath } from '../posting/media'
-import { cachedEntity, forgetAccount, inputPeerFor, kindOfEntity, peerKeyOf, peerKeyOfEntity, remember } from './peers'
+import {
+  cachedEntity,
+  forgetAccount,
+  inputPeerFor,
+  kindOfEntity,
+  peerKeyOf,
+  peerKeyOfEntity,
+  remember
+} from './peers'
 
 const log = createLogger('chats')
 
@@ -25,8 +33,11 @@ const MESSAGES_PAGE = 40
 // --- Konvertatsiya ---
 
 function displayName(e: Entity | undefined): string {
-  if (!e) return 'Noma\'lum'
-  if (e instanceof Api.User) return [e.firstName, e.lastName].filter(Boolean).join(' ') || e.username || e.phone || `#${e.id}`
+  if (!e) return "Noma'lum"
+  if (e instanceof Api.User)
+    return (
+      [e.firstName, e.lastName].filter(Boolean).join(' ') || e.username || e.phone || `#${e.id}`
+    )
   if ('title' in e && typeof e.title === 'string') return e.title
   return `#${(e as { id: unknown }).id}`
 }
@@ -38,13 +49,23 @@ function usernameOf(e: Entity | undefined): string | null {
 }
 
 function fileNameOf(doc: Api.Document): string | null {
-  const a = doc.attributes.find((x): x is Api.DocumentAttributeFilename => x instanceof Api.DocumentAttributeFilename)
+  const a = doc.attributes.find(
+    (x): x is Api.DocumentAttributeFilename => x instanceof Api.DocumentAttributeFilename
+  )
   return a?.fileName ?? null
 }
 
 function toMedia(m: Api.TypeMessageMedia | undefined): MessageMedia | null {
   if (!m || m instanceof Api.MessageMediaEmpty || m instanceof Api.MessageMediaWebPage) return null
-  const base: MessageMedia = { kind: 'other', fileName: null, size: null, width: null, height: null, label: null, hasThumb: false }
+  const base: MessageMedia = {
+    kind: 'other',
+    fileName: null,
+    size: null,
+    width: null,
+    height: null,
+    label: null,
+    hasThumb: false
+  }
 
   if (m instanceof Api.MessageMediaPhoto && m.photo instanceof Api.Photo) {
     const big = m.photo.sizes.find((s): s is Api.PhotoSize => s instanceof Api.PhotoSize)
@@ -53,26 +74,76 @@ function toMedia(m: Api.TypeMessageMedia | undefined): MessageMedia | null {
   if (m instanceof Api.MessageMediaDocument && m.document instanceof Api.Document) {
     const d = m.document
     const attrs = d.attributes
-    const hasThumb = !!d.thumbs?.some((t) => t instanceof Api.PhotoSize || t instanceof Api.PhotoStrippedSize)
-    const video = attrs.find((x): x is Api.DocumentAttributeVideo => x instanceof Api.DocumentAttributeVideo)
-    const audio = attrs.find((x): x is Api.DocumentAttributeAudio => x instanceof Api.DocumentAttributeAudio)
+    const hasThumb = !!d.thumbs?.some(
+      (t) => t instanceof Api.PhotoSize || t instanceof Api.PhotoStrippedSize
+    )
+    const video = attrs.find(
+      (x): x is Api.DocumentAttributeVideo => x instanceof Api.DocumentAttributeVideo
+    )
+    const audio = attrs.find(
+      (x): x is Api.DocumentAttributeAudio => x instanceof Api.DocumentAttributeAudio
+    )
     const size = Number(d.size)
-    if (attrs.some((x) => x instanceof Api.DocumentAttributeSticker)) return { ...base, kind: 'sticker', size, hasThumb, label: 'Stiker' }
-    if (attrs.some((x) => x instanceof Api.DocumentAttributeAnimated)) return { ...base, kind: 'gif', size, width: video?.w ?? null, height: video?.h ?? null, hasThumb, label: 'GIF' }
-    if (video) return { ...base, kind: 'video', fileName: fileNameOf(d), size, width: video.w, height: video.h, hasThumb, label: video.roundMessage ? 'Video xabar' : 'Video' }
-    if (audio) return { ...base, kind: audio.voice ? 'voice' : 'audio', fileName: fileNameOf(d), size, hasThumb, label: audio.voice ? 'Ovozli xabar' : audio.title || 'Audio' }
+    if (attrs.some((x) => x instanceof Api.DocumentAttributeSticker))
+      return { ...base, kind: 'sticker', size, hasThumb, label: 'Stiker' }
+    if (attrs.some((x) => x instanceof Api.DocumentAttributeAnimated))
+      return {
+        ...base,
+        kind: 'gif',
+        size,
+        width: video?.w ?? null,
+        height: video?.h ?? null,
+        hasThumb,
+        label: 'GIF'
+      }
+    if (video)
+      return {
+        ...base,
+        kind: 'video',
+        fileName: fileNameOf(d),
+        size,
+        width: video.w,
+        height: video.h,
+        hasThumb,
+        label: video.roundMessage ? 'Video xabar' : 'Video'
+      }
+    if (audio)
+      return {
+        ...base,
+        kind: audio.voice ? 'voice' : 'audio',
+        fileName: fileNameOf(d),
+        size,
+        hasThumb,
+        label: audio.voice ? 'Ovozli xabar' : audio.title || 'Audio'
+      }
     return { ...base, kind: 'document', fileName: fileNameOf(d) ?? 'fayl', size, hasThumb }
   }
-  if (m instanceof Api.MessageMediaGeo || m instanceof Api.MessageMediaGeoLive || m instanceof Api.MessageMediaVenue) return { ...base, label: 'Joylashuv' }
-  if (m instanceof Api.MessageMediaContact) return { ...base, label: `Kontakt: ${[m.firstName, m.lastName].filter(Boolean).join(' ')}` }
-  if (m instanceof Api.MessageMediaPoll) return { ...base, label: `So'rovnoma: ${m.poll.question.text}` }
+  if (
+    m instanceof Api.MessageMediaGeo ||
+    m instanceof Api.MessageMediaGeoLive ||
+    m instanceof Api.MessageMediaVenue
+  )
+    return { ...base, label: 'Joylashuv' }
+  if (m instanceof Api.MessageMediaContact)
+    return { ...base, label: `Kontakt: ${[m.firstName, m.lastName].filter(Boolean).join(' ')}` }
+  if (m instanceof Api.MessageMediaPoll)
+    return { ...base, label: `So'rovnoma: ${m.poll.question.text}` }
   return { ...base, label: 'Media' }
 }
 
 function toMessageView(m: Api.Message | Api.MessageService, isPrivate: boolean): MessageView {
   const date = new Date(m.date * 1000).toISOString()
   if (m instanceof Api.MessageService) {
-    return { id: m.id, date, out: !!m.out, senderName: null, html: 'Xizmat xabari', media: null, replyToId: null, service: true }
+    return {
+      id: m.id,
+      date,
+      out: !!m.out,
+      senderName: null,
+      html: 'Xizmat xabari',
+      media: null,
+      replyToId: null,
+      service: true
+    }
   }
   let senderName: string | null = null
   if (!isPrivate && !m.out) {
@@ -83,7 +154,8 @@ function toMessageView(m: Api.Message | Api.MessageService, isPrivate: boolean):
       senderName = null
     }
   }
-  const replyTo = m.replyTo instanceof Api.MessageReplyHeader ? (m.replyTo.replyToMsgId ?? null) : null
+  const replyTo =
+    m.replyTo instanceof Api.MessageReplyHeader ? (m.replyTo.replyToMsgId ?? null) : null
   return {
     id: m.id,
     date,
@@ -102,7 +174,15 @@ function lastTextOf(m: Api.Message | Api.MessageService | undefined): string {
   const media = toMedia(m.media)
   const text = (m.message ?? '').replace(/\s+/g, ' ').trim()
   if (text) return text.length > 80 ? text.slice(0, 79) + '…' : text
-  if (media) return media.label ?? (media.kind === 'photo' ? 'Rasm' : media.kind === 'video' ? 'Video' : media.fileName ?? 'Media')
+  if (media)
+    return (
+      media.label ??
+      (media.kind === 'photo'
+        ? 'Rasm'
+        : media.kind === 'video'
+          ? 'Video'
+          : (media.fileName ?? 'Media'))
+    )
   return ''
 }
 
@@ -112,7 +192,10 @@ export async function getDialogs(accountId: number, offsetDate?: number): Promis
   const client = clientManager.getClient(accountId)
   let dialogs
   try {
-    dialogs = await withTimeout(client.getDialogs({ limit: DIALOGS_PAGE, offsetDate, ignoreMigrated: true }), TELEGRAM_TIMEOUT_MS)
+    dialogs = await withTimeout(
+      client.getDialogs({ limit: DIALOGS_PAGE, offsetDate, ignoreMigrated: true }),
+      TELEGRAM_TIMEOUT_MS
+    )
   } catch (e) {
     throw mapTelegramError(e)
   }
@@ -138,16 +221,26 @@ export async function getDialogs(accountId: number, offsetDate?: number): Promis
     })
   }
   const last = dialogs[dialogs.length - 1]
-  return { dialogs: out, nextOffsetDate: dialogs.length >= DIALOGS_PAGE && last?.message ? last.message.date : null }
+  return {
+    dialogs: out,
+    nextOffsetDate: dialogs.length >= DIALOGS_PAGE && last?.message ? last.message.date : null
+  }
 }
 
 // --- Xabarlar ---
 
-export async function getMessages(accountId: number, peer: PeerKey, offsetId?: number): Promise<MessageView[]> {
+export async function getMessages(
+  accountId: number,
+  peer: PeerKey,
+  offsetId?: number
+): Promise<MessageView[]> {
   const client = clientManager.getClient(accountId)
   const input = await inputPeerFor(client, accountId, peer)
   try {
-    const msgs = await withTimeout(client.getMessages(input, { limit: MESSAGES_PAGE, offsetId: offsetId ?? 0 }), TELEGRAM_TIMEOUT_MS)
+    const msgs = await withTimeout(
+      client.getMessages(input, { limit: MESSAGES_PAGE, offsetId: offsetId ?? 0 }),
+      TELEGRAM_TIMEOUT_MS
+    )
     const isPrivate = peer.startsWith('u')
     // Eskidan yangiga tartib
     return msgs
@@ -159,13 +252,19 @@ export async function getMessages(accountId: number, peer: PeerKey, offsetId?: n
   }
 }
 
-export async function sendMessage(accountId: number, peer: PeerKey, text: string, filePath?: string): Promise<MessageView> {
+export async function sendMessage(
+  accountId: number,
+  peer: PeerKey,
+  text: string,
+  filePath?: string
+): Promise<MessageView> {
   const client = clientManager.getClient(accountId)
   const input = await inputPeerFor(client, accountId, peer)
   const body = text.trim()
   if (!body && !filePath) throw new AppError('MESSAGE_EMPTY', 'Xabar matni yoki fayl kiriting.')
   // Faqat fayl dialogida tanlangan yo'llar (renderer ixtiyoriy faylni yubora olmasin)
-  if (filePath && !isAllowedMediaPath(filePath)) throw new AppError('FORBIDDEN', 'Fayl tanlash dialogi orqali tanlang.')
+  if (filePath && !isAllowedMediaPath(filePath))
+    throw new AppError('FORBIDDEN', 'Fayl tanlash dialogi orqali tanlang.')
   try {
     const sent = filePath
       ? await client.sendFile(input, { file: filePath, caption: body || undefined })
@@ -202,7 +301,12 @@ function mediaCacheDir(): string {
   return dir
 }
 
-async function fetchMessage(client: TelegramClient, accountId: number, peer: PeerKey, msgId: number): Promise<Api.Message> {
+async function fetchMessage(
+  client: TelegramClient,
+  accountId: number,
+  peer: PeerKey,
+  msgId: number
+): Promise<Api.Message> {
   const input = await inputPeerFor(client, accountId, peer)
   const msgs = await client.getMessages(input, { ids: [msgId] })
   const m = msgs[0]
@@ -211,7 +315,11 @@ async function fetchMessage(client: TelegramClient, accountId: number, peer: Pee
 }
 
 /** Kichik thumbnail (rasm 'm' o'lchami yoki hujjat/video thumb'i) — keshlanadi. */
-export async function messageThumb(accountId: number, peer: PeerKey, msgId: number): Promise<string | null> {
+export async function messageThumb(
+  accountId: number,
+  peer: PeerKey,
+  msgId: number
+): Promise<string | null> {
   const file = join(mediaCacheDir(), `${accountId}-${peer}-${msgId}-thumb.jpg`)
   if (existsSync(file)) {
     allowMediaPaths([{ path: file, kind: 'photo' }])
@@ -225,7 +333,10 @@ export async function messageThumb(accountId: number, peer: PeerKey, msgId: numb
       // 'm' (320px) o'lchamini tanlaymiz
       const idx = m.media.photo.sizes.findIndex((s) => s instanceof Api.PhotoSize && s.type === 'm')
       thumb = idx >= 0 ? idx : 1
-    } else if (m.media instanceof Api.MessageMediaDocument && m.media.document instanceof Api.Document) {
+    } else if (
+      m.media instanceof Api.MessageMediaDocument &&
+      m.media.document instanceof Api.Document
+    ) {
       if (!m.media.document.thumbs?.length) return null
       thumb = m.media.document.thumbs.length - 1
     } else return null
@@ -240,12 +351,26 @@ export async function messageThumb(accountId: number, peer: PeerKey, msgId: numb
   }
 }
 
-export async function downloadMessageFile(accountId: number, peer: PeerKey, msgId: number, win: BrowserWindow | null): Promise<{ path: string | null }> {
+export async function downloadMessageFile(
+  accountId: number,
+  peer: PeerKey,
+  msgId: number,
+  win: BrowserWindow | null
+): Promise<{ path: string | null }> {
   const client = clientManager.getClient(accountId)
   const m = await fetchMessage(client, accountId, peer, msgId)
   const media = toMedia(m.media)
-  const defaultName = media?.fileName ?? (media?.kind === 'photo' ? `photo-${msgId}.jpg` : media?.kind === 'video' ? `video-${msgId}.mp4` : `file-${msgId}`)
-  const opts: Electron.SaveDialogOptions = { title: 'Faylni saqlash', defaultPath: join(app.getPath('downloads'), defaultName) }
+  const defaultName =
+    media?.fileName ??
+    (media?.kind === 'photo'
+      ? `photo-${msgId}.jpg`
+      : media?.kind === 'video'
+        ? `video-${msgId}.mp4`
+        : `file-${msgId}`)
+  const opts: Electron.SaveDialogOptions = {
+    title: 'Faylni saqlash',
+    defaultPath: join(app.getPath('downloads'), defaultName)
+  }
   const res = win ? await dialog.showSaveDialog(win, opts) : await dialog.showSaveDialog(opts)
   if (res.canceled || !res.filePath) return { path: null }
   try {
@@ -294,7 +419,12 @@ export function initChatEvents(): void {
             /* ignore */
           }
         }
-        broadcast('chats:newMessage', { accountId, peer: key, message: toMessageView(m, isPrivate), dialog: dialogView })
+        broadcast('chats:newMessage', {
+          accountId,
+          peer: key,
+          message: toMessageView(m, isPrivate),
+          dialog: dialogView
+        })
       } catch (e) {
         log.warn(`Yangi xabar qayta ishlanmadi (akkaunt ${accountId})`, e)
       }
@@ -308,4 +438,61 @@ export function initChatEvents(): void {
     handlers.delete(accountId)
     forgetAccount(accountId)
   })
+}
+
+/**
+ * @username yoki +telefon bo'yicha bitta foydalanuvchini topish — Telegram ilovasidagi qidiruv kabi.
+ * Topilgan entity keshlanadi, shunda chat ochib yozish mumkin. Faqat bittalab (ro'yxat emas).
+ */
+export async function resolvePeer(accountId: number, rawQuery: string): Promise<DialogView> {
+  const client = clientManager.getClient(accountId)
+  const q = rawQuery.trim()
+  let entity: Entity
+  try {
+    if (/^\+?\d{7,15}$/.test(q)) {
+      const r = await withTimeout(
+        client.invoke(new Api.contacts.ResolvePhone({ phone: q.replace(/\D/g, '') })),
+        TELEGRAM_TIMEOUT_MS
+      )
+      if (!r.users[0]) throw new AppError('NOT_FOUND', 'Topilmadi.')
+      entity = r.users[0] as Entity
+    } else {
+      entity = (await withTimeout(
+        client.getEntity(q.startsWith('@') ? q : `@${q}`),
+        TELEGRAM_TIMEOUT_MS
+      )) as Entity
+    }
+  } catch (e) {
+    const err = mapTelegramError(e)
+    if (err.code === 'PHONE_NOT_OCCUPIED')
+      throw new AppError('NOT_FOUND', "Bu telefonda Telegram yo'q.")
+    if (
+      err.code === 'USERNAME_NOT_OCCUPIED' ||
+      err.code === 'USERNAME_INVALID' ||
+      /No user has|Cannot find any entity/i.test(err.message)
+    ) {
+      throw new AppError('NOT_FOUND', `${q} topilmadi.`)
+    }
+    if (/^\+?\d/.test(q))
+      throw new AppError(
+        'NOT_FOUND',
+        "Telefon bo'yicha topilmadi — foydalanuvchi maxfiylik sozlamalari ruxsat bermaydi."
+      )
+    throw err
+  }
+  const key = peerKeyOfEntity(entity)
+  const input = await client.getInputEntity(entity)
+  remember(accountId, key, input, entity)
+  return {
+    peer: key,
+    kind: kindOfEntity(entity),
+    title: displayName(entity),
+    username: usernameOf(entity),
+    unread: 0,
+    pinned: false,
+    lastText: '',
+    lastDate: null,
+    lastOut: false,
+    isSelf: false
+  }
 }

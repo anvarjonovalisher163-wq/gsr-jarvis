@@ -23,7 +23,8 @@ const api: BridgeApi = {
     markRead: (accountId, peer) => invoke('chats:markRead', { accountId, peer }),
     avatar: (accountId, peer) => invoke('chats:avatar', { accountId, peer }),
     thumb: (accountId, peer, msgId) => invoke('chats:thumb', { accountId, peer, msgId }),
-    download: (accountId, peer, msgId) => invoke('chats:download', { accountId, peer, msgId })
+    download: (accountId, peer, msgId) => invoke('chats:download', { accountId, peer, msgId }),
+    resolve: (accountId, query) => invoke('chats:resolve', { accountId, query })
   },
   tags: {
     list: () => invoke('tags:list'),

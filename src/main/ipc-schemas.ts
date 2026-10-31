@@ -174,6 +174,7 @@ export const ipcSchemas = {
   'chats:avatar': z.object({ accountId: id, peer: peerKey }),
   'chats:thumb': z.object({ accountId: id, peer: peerKey, msgId: id }),
   'chats:download': z.object({ accountId: id, peer: peerKey, msgId: id }),
+  'chats:resolve': z.object({ accountId: id, query: shortText(64).min(2) }),
 
   'tags:list': z.void(),
   'tags:create': z.object({

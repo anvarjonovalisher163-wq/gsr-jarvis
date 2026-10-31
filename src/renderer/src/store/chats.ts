@@ -34,10 +34,23 @@ interface ChatsState {
   ensureThumb: (accountId: number, peer: PeerKey, msgId: number) => void
   setFilter: (f: DialogFilter) => void
   setSearch: (s: string) => void
-  onNewMessage: (p: { accountId: number; peer: PeerKey; message: MessageView; dialog: DialogView | null }) => void
+  /** Telegram'dan topilgan dialogni ro'yxatga qo'shib tanlaydi. */
+  resolveAndOpen: (accountId: number, query: string) => Promise<void>
+  onNewMessage: (p: {
+    accountId: number
+    peer: PeerKey
+    message: MessageView
+    dialog: DialogView | null
+  }) => void
 }
 
-const EMPTY: AccountChats = { dialogs: [], loaded: false, loading: false, nextOffsetDate: null, selected: null }
+const EMPTY: AccountChats = {
+  dialogs: [],
+  loaded: false,
+  loading: false,
+  nextOffsetDate: null,
+  selected: null
+}
 const tkey = (a: number, p: PeerKey) => `${a}:${p}`
 
 export const useChats = create<ChatsState>((set, get) => ({
@@ -54,21 +67,54 @@ export const useChats = create<ChatsState>((set, get) => ({
   loadDialogs: async (accountId, more = false) => {
     const cur = get().account(accountId)
     if (cur.loading || (more && !cur.nextOffsetDate)) return
-    set((s) => ({ byAccount: { ...s.byAccount, [accountId]: { ...cur, loading: true } }, error: null }))
+    set((s) => ({
+      byAccount: { ...s.byAccount, [accountId]: { ...cur, loading: true } },
+      error: null
+    }))
     try {
-      const page = await api.chats.dialogs(accountId, more ? (cur.nextOffsetDate ?? undefined) : undefined)
+      const page = await api.chats.dialogs(
+        accountId,
+        more ? (cur.nextOffsetDate ?? undefined) : undefined
+      )
       set((s) => {
         const prev = s.byAccount[accountId] ?? EMPTY
-        const merged = more ? [...prev.dialogs, ...page.dialogs.filter((d) => !prev.dialogs.some((x) => x.peer === d.peer))] : page.dialogs
-        return { byAccount: { ...s.byAccount, [accountId]: { ...prev, dialogs: merged, loaded: true, loading: false, nextOffsetDate: page.nextOffsetDate } } }
+        const merged = more
+          ? [
+              ...prev.dialogs,
+              ...page.dialogs.filter((d) => !prev.dialogs.some((x) => x.peer === d.peer))
+            ]
+          : page.dialogs
+        return {
+          byAccount: {
+            ...s.byAccount,
+            [accountId]: {
+              ...prev,
+              dialogs: merged,
+              loaded: true,
+              loading: false,
+              nextOffsetDate: page.nextOffsetDate
+            }
+          }
+        }
       })
     } catch (e) {
-      set((s) => ({ byAccount: { ...s.byAccount, [accountId]: { ...(s.byAccount[accountId] ?? EMPTY), loading: false, loaded: true } }, error: e instanceof Error ? e.message : String(e) }))
+      set((s) => ({
+        byAccount: {
+          ...s.byAccount,
+          [accountId]: { ...(s.byAccount[accountId] ?? EMPTY), loading: false, loaded: true }
+        },
+        error: e instanceof Error ? e.message : String(e)
+      }))
     }
   },
 
   select: (accountId, peer) => {
-    set((s) => ({ byAccount: { ...s.byAccount, [accountId]: { ...(s.byAccount[accountId] ?? EMPTY), selected: peer } } }))
+    set((s) => ({
+      byAccount: {
+        ...s.byAccount,
+        [accountId]: { ...(s.byAccount[accountId] ?? EMPTY), selected: peer }
+      }
+    }))
     if (peer) {
       const t = get().threads[tkey(accountId, peer)]
       if (!t) get().loadMessages(accountId, peer).catch(console.error)
@@ -77,7 +123,15 @@ export const useChats = create<ChatsState>((set, get) => ({
       set((s) => {
         const acc = s.byAccount[accountId]
         if (!acc) return s
-        return { byAccount: { ...s.byAccount, [accountId]: { ...acc, dialogs: acc.dialogs.map((d) => (d.peer === peer ? { ...d, unread: 0 } : d)) } } }
+        return {
+          byAccount: {
+            ...s.byAccount,
+            [accountId]: {
+              ...acc,
+              dialogs: acc.dialogs.map((d) => (d.peer === peer ? { ...d, unread: 0 } : d))
+            }
+          }
+        }
       })
     }
   },
@@ -93,10 +147,15 @@ export const useChats = create<ChatsState>((set, get) => ({
       set((s) => {
         const prev = s.threads[k] ?? t
         const list = older ? [...page, ...prev.list] : page
-        return { threads: { ...s.threads, [k]: { list, hasMore: page.length >= 40, loading: false } } }
+        return {
+          threads: { ...s.threads, [k]: { list, hasMore: page.length >= 40, loading: false } }
+        }
       })
     } catch (e) {
-      set((s) => ({ threads: { ...s.threads, [k]: { ...(s.threads[k] ?? t), loading: false } }, error: e instanceof Error ? e.message : String(e) }))
+      set((s) => ({
+        threads: { ...s.threads, [k]: { ...(s.threads[k] ?? t), loading: false } },
+        error: e instanceof Error ? e.message : String(e)
+      }))
     }
   },
 
@@ -118,18 +177,34 @@ export const useChats = create<ChatsState>((set, get) => ({
     const k = tkey(accountId, peer)
     if (k in get().avatars) return
     set((s) => ({ avatars: { ...s.avatars, [k]: null } }))
-    api.chats.avatar(accountId, peer).then((url) => url && set((s) => ({ avatars: { ...s.avatars, [k]: url } }))).catch(() => {})
+    api.chats
+      .avatar(accountId, peer)
+      .then((url) => url && set((s) => ({ avatars: { ...s.avatars, [k]: url } })))
+      .catch(() => {})
   },
 
   ensureThumb: (accountId, peer, msgId) => {
     const k = `${tkey(accountId, peer)}:${msgId}`
     if (k in get().thumbs) return
     set((s) => ({ thumbs: { ...s.thumbs, [k]: null } }))
-    api.chats.thumb(accountId, peer, msgId).then((url) => url && set((s) => ({ thumbs: { ...s.thumbs, [k]: url } }))).catch(() => {})
+    api.chats
+      .thumb(accountId, peer, msgId)
+      .then((url) => url && set((s) => ({ thumbs: { ...s.thumbs, [k]: url } })))
+      .catch(() => {})
   },
 
   setFilter: (filter) => set({ filter }),
   setSearch: (search) => set({ search }),
+
+  resolveAndOpen: async (accountId, query) => {
+    const d = await api.chats.resolve(accountId, query)
+    set((s) => {
+      const acc = s.byAccount[accountId] ?? EMPTY
+      const dialogs = acc.dialogs.some((x) => x.peer === d.peer) ? acc.dialogs : [d, ...acc.dialogs]
+      return { byAccount: { ...s.byAccount, [accountId]: { ...acc, dialogs } }, search: '' }
+    })
+    get().select(accountId, d.peer)
+  },
 
   onNewMessage: ({ accountId, peer, message, dialog }) => {
     const k = tkey(accountId, peer)
@@ -139,14 +214,22 @@ export const useChats = create<ChatsState>((set, get) => ({
       let byAccount = s.byAccount
       if (acc) {
         const exists = acc.dialogs.some((d) => d.peer === peer)
-        const dialogs = exists ? bump(acc.dialogs, peer, message, selected) : dialog ? [dialog, ...acc.dialogs] : acc.dialogs
+        const dialogs = exists
+          ? bump(acc.dialogs, peer, message, selected)
+          : dialog
+            ? [dialog, ...acc.dialogs]
+            : acc.dialogs
         byAccount = { ...s.byAccount, [accountId]: { ...acc, dialogs } }
       }
       const t = s.threads[k]
-      const threads = t && !t.list.some((x) => x.id === message.id) ? { ...s.threads, [k]: { ...t, list: [...t.list, message] } } : s.threads
+      const threads =
+        t && !t.list.some((x) => x.id === message.id)
+          ? { ...s.threads, [k]: { ...t, list: [...t.list, message] } }
+          : s.threads
       return { byAccount, threads }
     })
-    if (get().account(accountId).selected === peer) api.chats.markRead(accountId, peer).catch(() => {})
+    if (get().account(accountId).selected === peer)
+      api.chats.markRead(accountId, peer).catch(() => {})
   }
 }))
 
@@ -155,7 +238,13 @@ function bump(dialogs: DialogView[], peer: PeerKey, m: MessageView, read: boolea
   const d = dialogs.find((x) => x.peer === peer)
   if (!d) return dialogs
   const text = m.html.replace(/<[^>]+>/g, '').trim() || m.media?.label || (m.media ? 'Media' : '')
-  const updated: DialogView = { ...d, lastText: text.length > 80 ? text.slice(0, 79) + '…' : text, lastDate: m.date, lastOut: m.out, unread: read || m.out ? d.unread : d.unread + 1 }
+  const updated: DialogView = {
+    ...d,
+    lastText: text.length > 80 ? text.slice(0, 79) + '…' : text,
+    lastDate: m.date,
+    lastOut: m.out,
+    unread: read || m.out ? d.unread : d.unread + 1
+  }
   const rest = dialogs.filter((x) => x.peer !== peer)
   // Pinned'lar tepada qoladi
   const pinned = rest.filter((x) => x.pinned)
