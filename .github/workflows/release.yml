@@ -33,8 +33,9 @@ jobs:
       matrix:
         include:
           - os: macos-14
-            # Ikkala arch bitta chaqiruvda — latest-mac.yml ikkalasini o'z ichiga oladi
-            args: --mac --arm64 --x64
+            # Runner arm64; native modullar qayta qurilmaydi (npmRebuild=false), shuning uchun faqat
+            # Apple Silicon. Intel Mac uchun Intel kompyuterda: node scripts/pack.mjs --mac
+            args: --mac --arm64
           - os: windows-latest
             args: --win --x64
     runs-on: ${{ matrix.os }}
