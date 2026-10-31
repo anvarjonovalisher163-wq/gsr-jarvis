@@ -118,3 +118,22 @@ export interface UserProfile {
   email: string
   phone: string
 }
+
+/** Story yuborish (profil yoki kanal). */
+export interface StoryInput {
+  accountId: number
+  /** null — o'z profili, aks holda channels.id (admin kanal) */
+  channelId: number | null
+  media: MediaItem
+  caption: string
+  /** 6 | 12 | 24 | 48 */
+  periodHours: number
+  privacy: 'all' | 'contacts' | 'close'
+  /** Profilda doimiy saqlash */
+  pinned: boolean
+}
+
+export interface StoryResult {
+  storyId: number | null
+  target: string
+}

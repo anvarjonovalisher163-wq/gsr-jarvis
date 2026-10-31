@@ -246,15 +246,13 @@ class ApiServer {
   }
 
   private accounts() {
-    return accountsRepo
-      .listActive()
-      .map((a) => ({
-        id: a.id,
-        phone: a.phone,
-        username: a.username,
-        name: a.first_name,
-        connected: clientManager.isConnected(a.id)
-      }))
+    return accountsRepo.listActive().map((a) => ({
+      id: a.id,
+      phone: a.phone,
+      username: a.username,
+      name: a.first_name,
+      connected: clientManager.isConnected(a.id)
+    }))
   }
 
   /** Akkaunt bo'yicha ketma-ket navbat: bir vaqtda bitta, orasida kamida 3s. */

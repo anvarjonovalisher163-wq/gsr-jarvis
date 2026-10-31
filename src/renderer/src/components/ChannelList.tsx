@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Hash, Loader2, Megaphone, RefreshCw, Users } from 'lucide-react'
 import type { AccountView, ChannelView } from '@shared/ipc'
 import { useAccounts } from '@renderer/store/accounts'
@@ -14,6 +14,9 @@ export default function ChannelList() {
   }, [load])
 
   const activeAccounts = accounts.filter((a) => a.status === 'active')
+  const [showChannels, setShowChannels] = useState(true)
+  const [showGroups, setShowGroups] = useState(true)
+  const visible = channels.filter((c) => (c.type === 'channel' ? showChannels : showGroups))
 
   return (
     <div className="flex h-full flex-col">
@@ -33,6 +36,15 @@ export default function ChannelList() {
         </button>
       </div>
 
+      <div className="flex items-center gap-3 border-b border-slate-200 px-3 py-1.5 text-xs dark:border-slate-800">
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={showChannels} onChange={(e) => setShowChannels(e.target.checked)} className="accent-brand-500" /> Kanallar
+        </label>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={showGroups} onChange={(e) => setShowGroups(e.target.checked)} className="accent-brand-500" /> Guruhlar
+        </label>
+      </div>
+
       <div className="flex-1 overflow-y-auto p-2">
         {!loaded && <div className="py-6 text-center text-xs text-slate-400">Yuklanmoqda…</div>}
         {accounts.length === 0 && loaded && (
@@ -43,7 +55,7 @@ export default function ChannelList() {
           <AccountGroup
             key={account.id}
             account={account}
-            channels={channels.filter((c) => c.account_id === account.id)}
+            channels={visible.filter((c) => c.account_id === account.id)}
             selectedIds={selectedIds}
             syncing={syncing.includes(account.id)}
             error={errors[account.id]}

@@ -95,6 +95,8 @@ import type {
   CampaignInput,
   CampaignReport,
   CampaignView,
+  StoryInput,
+  StoryResult,
   TemplateInput,
   TemplateView,
   UserProfile
@@ -219,6 +221,10 @@ export interface IpcChannels {
 
   /** Fayl tanlash dialogi (main'da). Bekor qilinsa bo'sh massiv. */
   'media:pick': { req: void; res: MediaFile[] }
+  /** .txt/.json/.csv fayldan postlarni qoralama sifatida import qilish (dialog). */
+  'posts:importFile': { req: void; res: { count: number } }
+  /** Story: profil yoki kanalga rasm/video. */
+  'stories:send': { req: StoryInput; res: StoryResult }
 
   'bots:list': { req: void; res: BotView[] }
   /** Token getMe bilan tekshiriladi, shifrlanib saqlanadi va bot ishga tushadi. */
@@ -442,6 +448,10 @@ export interface RendererApi {
     delete: (id: number) => Promise<void>
     duplicate: (id: number) => Promise<PostDetail>
     reschedule: (id: number, scheduledAt: string) => Promise<PostDetail>
+    importFile: () => Promise<{ count: number }>
+  }
+  stories: {
+    send: (input: StoryInput) => Promise<StoryResult>
   }
   media: {
     pick: () => Promise<MediaFile[]>

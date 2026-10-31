@@ -3,7 +3,7 @@ import type { PostDetail, PostFilter, PostInput } from '@shared/ipc'
 import { DEFAULT_TIMEZONE } from '@shared/time'
 import { api } from '@renderer/lib/api'
 
-export type PostingView = 'editor' | 'list' | 'calendar'
+export type PostingView = 'editor' | 'list' | 'calendar' | 'stories'
 
 interface PostsState {
   posts: PostDetail[]

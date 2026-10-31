@@ -3,6 +3,8 @@ import { handle } from '../../ipc'
 import { pickMedia } from './media'
 import { deletePost, duplicatePost, getDetail, listPosts, reschedulePost, savePost } from './service'
 import { sendPost } from './send'
+import { importPostsFromFile } from './importPosts'
+import { sendStory } from '../stories/service'
 
 export function registerPostingIpc(): void {
   handle('posts:list', (_e, filter) => listPosts(filter ?? {}))
@@ -15,4 +17,6 @@ export function registerPostingIpc(): void {
   handle('posts:reschedule', (_e, { id, scheduledAt }) => reschedulePost(id, scheduledAt))
 
   handle('media:pick', (e) => pickMedia(BrowserWindow.fromWebContents(e.sender)))
+  handle('posts:importFile', (e) => importPostsFromFile(BrowserWindow.fromWebContents(e.sender)))
+  handle('stories:send', (_e, input) => sendStory(input))
 }

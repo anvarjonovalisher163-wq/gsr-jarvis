@@ -1,5 +1,8 @@
-import { useEffect } from 'react'
-import { CalendarDays, List, PenSquare } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CalendarDays, CircleDashed, FileUp, List, PenSquare } from 'lucide-react'
+import { api } from '@renderer/lib/api'
+import { describeError } from '@renderer/lib/errors'
+import StoryPanel from '@renderer/components/posting/StoryPanel'
 import ChannelList from '@renderer/components/ChannelList'
 import PostEditor from '@renderer/components/posting/PostEditor'
 import PostList from '@renderer/components/posting/PostList'
@@ -8,6 +11,21 @@ import { usePosts } from '@renderer/store/posts'
 
 export default function PostingPage() {
   const { view, setView, editing, openNew, openEdit, load, posts } = usePosts()
+  const [notice, setNotice] = useState<string | null>(null)
+
+  const importPosts = async () => {
+    try {
+      const r = await api.posts.importFile()
+      if (r.count > 0) {
+        await load()
+        setView('list')
+        setNotice(`${r.count} ta post qoralama sifatida qo'shildi.`)
+      }
+    } catch (e) {
+      setNotice(describeError(e).message)
+    }
+    setTimeout(() => setNotice(null), 5000)
+  }
 
   useEffect(() => {
     load().catch(console.error)
@@ -30,11 +48,20 @@ export default function PostingPage() {
           <ViewTab active={view === 'calendar'} icon={CalendarDays} onClick={() => setView('calendar')}>
             Kalendar
           </ViewTab>
-          {editing && (
-            <button type="button" onClick={() => openNew()} className="ml-auto text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
-              + Yangi post
+          <ViewTab active={view === 'stories'} icon={CircleDashed} onClick={() => setView('stories')}>
+            Stories
+          </ViewTab>
+          <span className="ml-auto flex items-center gap-3">
+            {notice && <span className="text-xs text-slate-500">{notice}</span>}
+            <button type="button" onClick={importPosts} title="Postlarni .txt/.json/.csv fayldan import qilish" className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+              <FileUp size={13} /> Import
             </button>
-          )}
+            {editing && (
+              <button type="button" onClick={() => openNew()} className="text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                + Yangi post
+              </button>
+            )}
+          </span>
         </div>
 
         <div className="min-h-0 flex-1">
@@ -42,6 +69,8 @@ export default function PostingPage() {
             <PostEditor editing={editing} onDone={() => setView('list')} />
           ) : view === 'list' ? (
             <PostList onEdit={openEdit} />
+          ) : view === 'stories' ? (
+            <StoryPanel />
           ) : (
             <Calendar onEdit={openEdit} onNew={(iso) => openNew(iso)} />
           )}

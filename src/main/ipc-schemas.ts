@@ -77,6 +77,16 @@ export const ipcSchemas = {
   'posts:reschedule': z.object({ id, scheduledAt: isoDate }),
 
   'media:pick': z.void(),
+  'posts:importFile': z.void(),
+  'stories:send': z.object({
+    accountId: id,
+    channelId: id.nullable(),
+    media: mediaItem,
+    caption: shortText(2048),
+    periodHours: z.union([z.literal(6), z.literal(12), z.literal(24), z.literal(48)]),
+    privacy: z.enum(['all', 'contacts', 'close']),
+    pinned: z.boolean()
+  }),
 
   'bots:list': z.void(),
   'bots:add': z.object({ token: shortText(200) }),

@@ -47,6 +47,9 @@ const api: BridgeApi = {
     getSettings: () => invoke('app:getSettings'),
     setSettings: (patch) => invoke('app:setSettings', patch)
   },
+  stories: {
+    send: (input) => invoke('stories:send', input)
+  },
   templates: {
     list: () => invoke('templates:list'),
     save: (input) => invoke('templates:save', input),
@@ -120,7 +123,8 @@ const api: BridgeApi = {
     retry: (id) => invoke('posts:retry', { id }),
     delete: (id) => invoke('posts:delete', { id }),
     duplicate: (id) => invoke('posts:duplicate', { id }),
-    reschedule: (id, scheduledAt) => invoke('posts:reschedule', { id, scheduledAt })
+    reschedule: (id, scheduledAt) => invoke('posts:reschedule', { id, scheduledAt }),
+    importFile: () => invoke('posts:importFile')
   },
   media: {
     pick: () => invoke('media:pick')

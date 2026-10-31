@@ -81,6 +81,13 @@ Qoida: FLOOD_WAIT kelsa ilova faqat kutadi va qolgan vaqtni ko'rsatadi — boshq
 olingan StringSession satrlari, har qatorga bittadan — kodsiz ulanadi. Avtomatik "kodsiz login"
 boshqa yo'l bilan mumkin emas: Telegram har kirishda akkauntga kod yuboradi. `tdata` qo'llanmaydi.
 
+**Akkauntlar boshqaruvi** (chap paneldagi ⚙-ga o'xshash tugma): jadval ko'rinishida barcha
+akkauntlar; **Fayldan import** — `.session` (Telethon/Pyrogram SQLite), `.zip` (ichida .session/.json),
+`.json` (ichida `session` maydoni), `.txt` (StringSession satrlari); **Eksport** — tanlangan
+akkauntlar sessiyalarini matn fayliga (fayl akkauntga to'liq kirish beradi — ehtiyot bo'ling);
+**Spam test** — @SpamBot'dan akkauntda cheklov bor-yo'qligini so'raydi (faqat holat, hech narsani
+aylanib o'tmaydi).
+
 ## Chatlar
 
 **Chatlar** tabi: tepada akkaunt tablari (har biri alohida akkaunt), o'rtada dialoglar (qidiruv,
@@ -144,6 +151,14 @@ holat rangi). Postni **sudrab** boshqa kun/soatga tashlang — Telegram'dagi rej
 yangi vaqt bilan qayta rejalanadi (yuborilgan postlar sudralmaydi). Bo'sh kunga **ikki marta
 bosing** (yoki «+») — o'sha sana bilan yangi post muharriri ochiladi.
 
+### Stories va import
+
+Posting → **Stories**: o'z profilingizga (Telegram Premium kerak) yoki admin kanalingizga (boost
+darajasi kerak) rasm/video story, izoh, muddat (6–48 soat), kim ko'rishi, profilda saqlash.
+Posting → **Import**: `.txt` (postlar `---` bilan ajratiladi, `# sarlavha` birinchi qatorda),
+`.json` (`[{"title","text"}]`) yoki `.csv` (`sarlavha;matn`) fayldan postlar qoralama sifatida.
+Chap panelda **Kanallar / Guruhlar** filtri.
+
 ## Botlar
 
 **Botlar** tabi → "Bot qo'shish" → @BotFather bergan token. Token `getMe` bilan tekshiriladi,
@@ -201,9 +216,48 @@ oynasi chiqmaydi, chap pastda "Shaxsiy rejim · Cheksiz". Ixtiyoriy `MAIN_VITE_O
 (Sozlamalar → Litsenziya → Qurilma ID) — faqat o'sha kompyuterda cheksiz, boshqa joyda oddiy
 litsenziya qoidalari. Keyinchalik sotmoqchi bo'lsangiz flagni olib tashlab Supabase'ni sozlaysiz.
 
+## Xabarnoma: kampaniyalar, tayyor xabarlar, qora ro'yxat
+
+**Kampaniya** — bitta xabar (matn + media) akkauntning **mavjud chatlariga** (siz bilan yozishgan
+odamlar; akkaunt dialoglaridan tanlanadi, CRM tegi bo'yicha filtr) ketma-ket yuboriladi:
+- xabarlar orasida tasodifiy kechikish (eng kami 3 s), har N xabardan keyin uzun pauza;
+- akkaunt bo'yicha 24 soatlik limit (kampaniya + API birga; maks 200), «faqat yangilarga»;
+- rejalashtirish, pauza/davom/bekor, hisobot (yuborildi / xato / o'tkazildi, sababi bilan);
+- FLOOD_WAIT → kampaniya pauza, kutish tugagach o'zi davom etadi (2 soatgacha); **boshqa
+  akkauntga o'tilmaydi**; PEER_FLOOD → to'xtaydi (ertaga davom eting).
+
+Atayin **yo'q** narsalar: username/ID ro'yxatini import yoki guruhdan parsing qilib notanishlarga
+yuborish, akkaunt rotatsiyasi, matnni «unikallashtirish». Bu spam va akkauntni ban qildiradi.
+
+**Tayyor xabarlar** — nomi, matn, media, tugmalar (tugmalar faqat botlarda). Posting muharriri,
+Chatlar, bot rassilkasi va kampaniyada «Tayyor xabar» tugmasi orqali qo'yiladi.
+
+**Qora ro'yxat** — Telegram user ID bo'yicha; kampaniya va API ularga yubormaydi, botlar javob
+bermaydi va obunaga olmaydi (rassilkada ham chiqarib tashlanadi).
+
+## REST API (CRM integratsiyasi)
+
+Sozlamalar → **REST API**: faqat `127.0.0.1` da ishlaydigan lokal server (default port 48123),
+`X-Api-Key` (yoki `Authorization: Bearer`) kalit bilan. Dastur ishlab turgan kompyuterdan CRM yoki
+skript so'rov yuboradi, xabar tanlangan akkauntdan ketadi.
+
+```bash
+curl -X POST http://127.0.0.1:48123/api/send \
+  -H "X-Api-Key: <kalit>" -H "Content-Type: application/json" \
+  -d '{"account_id": 1, "to": "@username", "text": "Salom! Buyurtmangiz tayyor."}'
+```
+
+- `GET /api/status` — holat, akkauntlar, kunlik limit; `GET /api/accounts`.
+- `POST /api/send` — `to`: `@username`, `+998…` (faqat foydalanuvchi maxfiyligi ruxsat bersa),
+  raqamli id yoki `u<id>`; `parse_mode`: `html` (default) yoki `text`. Javob `{"ok":true,
+  "message_id":…}`; xatolar: 401 kalit, 400 so'rov, 404 topilmadi, 422 Telegram xatosi, 429
+  kunlik limit yoki FLOOD_WAIT (`retryAfter` soniya — kutib qayta yuboring).
+- Akkaunt bo'yicha navbat (kamida 3 s oralig'i), qora ro'yxat, kunlik limit (kampaniya bilan umumiy).
+  Kalitni brauzer yoki xabarlarga bermang; «Yangilash» eski kalitni bekor qiladi.
+
 ## Vazifalar, loglar, tray, proksi, zaxira
 
-- **Vazifalar** tabi: rejali postlar (Telegram'da turganlar), rassilkalar (ishlayotgan/pauza/rejali),
+- **Vazifalar** tabi: rejali postlar (Telegram'da turganlar), rassilkalar va kampaniyalar (ishlayotgan/pauza/rejali),
   sinxronlash va post yuborish jarayonlari — progress va to'xtatish tugmasi bilan. Rejali postni
   to'xtatish Telegram'dagi xabarni o'chiradi, post qoralamaga qaytadi.
 - **Loglar**: daraja/modul filtri, qidiruv, nusxa olish, `.txt` eksport, tozalash. 30 kundan eski
